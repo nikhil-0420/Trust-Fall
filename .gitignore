@@ -25,6 +25,10 @@ data/cache/
 *.db
 *.log
 
+# Tools / Binaries
+tools/
+*.exe
+
 # OS
 .DS_Store
 Thumbs.db

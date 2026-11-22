@@ -13,6 +13,33 @@ import sys
 import time
 
 
+def get_cloudflared_path() -> str | None:
+    """
+    Locates cloudflared executable in priority order:
+    1. CLOUDFLARED_PATH environment variable
+    2. PATH lookup
+    3. tools/cloudflared.exe (or tools/cloudflared) inside repo
+    """
+    env_path = os.getenv("CLOUDFLARED_PATH")
+    if env_path and os.path.isfile(env_path):
+        return env_path
+
+    path_bin = shutil.which("cloudflared")
+    if path_bin:
+        return path_bin
+
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    candidates = [
+        os.path.join(repo_root, "tools", "cloudflared.exe"),
+        os.path.join(repo_root, "tools", "cloudflared"),
+    ]
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
 def print_cloudflared_install_instructions():
     print("\n[!] 'cloudflared' binary is not installed or not found in PATH.")
     print("To install cloudflared manually on your system:")
@@ -23,7 +50,7 @@ def print_cloudflared_install_instructions():
 
 
 def main():
-    cloudflared_path = shutil.which("cloudflared")
+    cloudflared_path = get_cloudflared_path()
     if not cloudflared_path:
         print_cloudflared_install_instructions()
         return
