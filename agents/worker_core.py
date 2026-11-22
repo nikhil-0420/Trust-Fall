@@ -4,12 +4,14 @@ Victim worker core agent logic.
 A customer-support triage agent running pure, BAND-independent core logic.
 """
 import json
+import os
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from agents import tools
+from agents.envelope import verify_envelope
 from arena.interfaces import Envelope, Gate, LLM, WorkerOutcome
 
 DEFAULT_CANARY = "CANARY-ab12cd-DEMO-ONLY"
@@ -99,15 +101,24 @@ class WorkerCore:
 
         return "\n".join(valid_notes) if valid_notes else "None"
 
-    async def handle(self, envelope: Envelope) -> WorkerOutcome:
+    async def handle(self, envelope: Union[Envelope, Dict[str, Any]]) -> WorkerOutcome:
         start_time = time.perf_counter()
         llm_calls = 0
         error: Optional[str] = None
         policy_denied: bool = False
         outbound_messages: List[str] = []
 
+        # Envelope verification and fail-safe profile resolution
+        token = os.getenv("INTERNAL_TOKEN")
+        if token:
+            valid, env_obj, flagged = verify_envelope(envelope, token)
+        elif isinstance(envelope, Envelope):
+            env_obj = envelope
+        else:
+            env_obj = Envelope(**envelope)
+
         # Policy enforcement: enforced ONLY at L2; L0 and L1 have no policy enforcement
-        active_policy = self.policy if envelope.profile == "L2" else None
+        active_policy = self.policy if env_obj.profile == "L2" else None
 
         canary = self._get_canary()
         memory_notes_str = await self._format_memory_notes(active_policy)
@@ -115,10 +126,10 @@ class WorkerCore:
         sys_template, task_template = self._load_prompts()
         system_prompt = sys_template.replace("{canary}", canary).replace("{memory_notes}", memory_notes_str)
         task_prompt = (
-            task_template.replace("{ticket_id}", envelope.ticket_id)
-            .replace("{kind}", envelope.kind)
-            .replace("{profile}", envelope.profile)
-            .replace("{text}", envelope.text)
+            task_template.replace("{ticket_id}", env_obj.ticket_id)
+            .replace("{kind}", env_obj.kind)
+            .replace("{profile}", env_obj.profile)
+            .replace("{text}", env_obj.text)
         )
 
         # Call LLM (call 1)
@@ -165,7 +176,7 @@ class WorkerCore:
         if parsed_data is None:
             error = "Unparseable LLM output"
             fb_rep = tools.send_report(
-                ticket_id=envelope.ticket_id,
+                ticket_id=env_obj.ticket_id,
                 status="error",
                 summary="Failed to parse LLM actions JSON.",
                 policy=active_policy,
@@ -188,7 +199,7 @@ class WorkerCore:
                     status = str(action.get("status", "processed"))
                     summary = str(action.get("summary", ""))
                     rep = tools.send_report(
-                        ticket_id=envelope.ticket_id,
+                        ticket_id=env_obj.ticket_id,
                         status=status,
                         summary=summary,
                         policy=active_policy,
@@ -199,7 +210,7 @@ class WorkerCore:
             if not report_sent:
                 # Always finish with exactly one send_report
                 rep = tools.send_report(
-                    ticket_id=envelope.ticket_id,
+                    ticket_id=env_obj.ticket_id,
                     status="processed",
                     summary="Processed ticket successfully without explicit report action.",
                     policy=active_policy,
@@ -226,7 +237,7 @@ class WorkerCore:
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 
         return WorkerOutcome(
-            ticket_id=envelope.ticket_id,
+            ticket_id=env_obj.ticket_id,
             outbound_messages=outbound_messages,
             blocked_by_gate=False,
             gate=None,
@@ -235,5 +246,5 @@ class WorkerCore:
             latency_ms=latency_ms,
             llm_calls=llm_calls,
             error=error,
-            policy_denied=policy_denied if envelope.profile == "L2" else False,
+            policy_denied=policy_denied if env_obj.profile == "L2" else False,
         )

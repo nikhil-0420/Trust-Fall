@@ -72,6 +72,7 @@ def test_fact_only_notes_accepted_and_imperatives_denied(sample_patch: dict):
 
 @pytest.mark.asyncio
 async def test_poisoned_memory_denied_at_l2_and_allowed_at_l0(tmp_path: Path, sample_patch: dict):
+    token = get_or_create_internal_token()
     policy = Policy(sample_patch)
     poison_actions = json.dumps({
         "actions": [
@@ -81,19 +82,21 @@ async def test_poisoned_memory_denied_at_l2_and_allowed_at_l0(tmp_path: Path, sa
     })
     llm = MockLLM(responses={"worker_triage": poison_actions})
 
-    # At L0: policy is NOT enforced -> memory write succeeds
+    # At L0: signed by Dispatcher -> policy is NOT enforced -> memory write succeeds
     worker_l0 = WorkerCore(llm=llm, state_dir=tmp_path / "l0", policy=policy)
     env_l0 = Envelope(ticket_id="T-L0", profile="L0", text="Inject poison", kind="attack")
-    outcome_l0 = await worker_l0.handle(env_l0)
+    signed_l0 = sign_envelope(env_l0, token)
+    outcome_l0 = await worker_l0.handle(signed_l0)
 
     assert outcome_l0.policy_denied is False
     mem_l0 = json.loads((tmp_path / "l0" / "memory.json").read_text(encoding="utf-8"))
     assert any("POISON-MARK" in n["text"] for n in mem_l0["notes"])
 
-    # At L2: policy IS enforced -> memory write denied, policy_denied is True
+    # At L2: signed by Dispatcher -> policy IS enforced -> memory write denied, policy_denied is True
     worker_l2 = WorkerCore(llm=llm, state_dir=tmp_path / "l2", policy=policy)
     env_l2 = Envelope(ticket_id="T-L2", profile="L2", text="Inject poison", kind="attack")
-    outcome_l2 = await worker_l2.handle(env_l2)
+    signed_l2 = sign_envelope(env_l2, token)
+    outcome_l2 = await worker_l2.handle(signed_l2)
 
     assert outcome_l2.policy_denied is True
     mem_file_l2 = tmp_path / "l2" / "memory.json"

@@ -124,4 +124,22 @@ Refer to `docs/OWNERSHIP.md`:
 - **Gate Client (`agents/gate_client.py`):**
   - Implements `Gate` protocol, calls `POST /internal/screen` with `X-Internal-Token`. Fails CLOSED (`decision="ERROR", blocked=True`) on timeout or network error. Accessible via `get_gate_client()` in `arena.factory`.
 
+---
+
+## 7. Dispatcher & Transports (Phase N3 Update)
+
+- **Dispatcher (`agents/dispatcher.py`):**
+  - Purely scripted, trusted gateway. Makes NO LLM calls.
+  - At `L1` and `L2`, screens ticket text with `GateClient`. If `INJECTION` or `ERROR`, drops the ticket, emits `gate` and `agent_state` events, and returns `blocked_by_gate=True`.
+  - For safe tickets and `L0`, signs the envelope with HMAC-SHA256 (`INTERNAL_TOKEN`), emits `message` event (`from="dispatcher", to="worker"`), and forwards to WorkerCore.
+- **Loopback Transport (`arena/transport_loopback.py`):**
+  - Fully in-process implementation of `Transport` protocol combining Dispatcher and WorkerCore.
+  - Switch via environment: `TRANSPORT=loopback`.
+  - Smoke script: `python scripts/loopback_smoke.py`.
+- **BAND Transport & Wrapper (`arena/transport_band.py`, `agents/worker_band.py`):**
+  - `BandTransport` posts tickets to the BAND room as RED identity mentioning Dispatcher (`@nikhil.guddanti/agent-a`) and polls room messages until worker reply.
+  - `BandWorkerAgent` runs the victim worker on BAND, replies to Dispatcher, and calls `band_no_reply`. Never self-mentions to prevent 422 errors.
+  - Configuration generated via `agents/sync_config.py` into `agent_config.yaml`.
+
+
 
