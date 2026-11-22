@@ -6,12 +6,10 @@ and launches worker in background.
 """
 import base64
 import os
-import sys
-import time
 from pathlib import Path
-from typing import Optional
-from dotenv import load_dotenv
+
 import httpx
+from dotenv import load_dotenv
 
 load_dotenv()
 

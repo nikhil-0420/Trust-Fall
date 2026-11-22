@@ -5,11 +5,11 @@ Consumes worker reports from BAND room and handles refund operations.
 Calls band_no_reply after acting to avoid communication loops.
 """
 import asyncio
-import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 import yaml
 from dotenv import load_dotenv
 
@@ -23,8 +23,8 @@ from agents.sync_config import sync_band_config
 class BandAnalystAgent:
     def __init__(
         self,
-        analyst_core: Optional[AnalystCore] = None,
-        config_path: Optional[Path] = None,
+        analyst_core: AnalystCore | None = None,
+        config_path: Path | None = None,
     ):
         self.config_path = config_path or Path("agent_config.yaml")
         if not self.config_path.exists():
@@ -39,7 +39,7 @@ class BandAnalystAgent:
             state_dir=Path(os.getenv("STATE_DIR", "data/analyst_state"))
         )
 
-    async def handle_band_message(self, message_text: str, guard: bool = False) -> Dict[str, Any]:
+    async def handle_band_message(self, message_text: str, guard: bool = False) -> dict[str, Any]:
         result = await self.analyst_core.handle_report(message_text, guard=guard)
         return {
             "status": result.get("status"),

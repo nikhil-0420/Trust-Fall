@@ -5,7 +5,7 @@ Validates patch dictionaries against strict safety rules, schemas, and regex per
 Pure function, offline, no network.
 """
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from agents.policy import NESTED_QUANTIFIER_REGEX, safe_regex_search
 from contracts.models import Patch
@@ -22,7 +22,7 @@ CATASTROPHIC_TEST_STRING = ("a" * 2048) + "X"
 TRIVIAL_WILDCARDS = {".*", ".+", "^.*$", "^.+$", ".*?", ".+?", ""}
 
 
-def validate_patch(patch: Any) -> Tuple[bool, List[str], Optional[Patch]]:
+def validate_patch(patch: Any) -> tuple[bool, list[str], Patch | None]:
     """
     Validates a patch dictionary according to safety rules:
     - Must be a dictionary.
@@ -35,7 +35,7 @@ def validate_patch(patch: Any) -> Tuple[bool, List[str], Optional[Patch]]:
     - gate: threshold in [0.05, 0.95].
     Returns (ok: bool, errors: list[str], normalized: Optional[Patch]).
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     if not isinstance(patch, dict):
         return False, ["Patch must be a JSON dictionary"], None

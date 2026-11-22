@@ -6,7 +6,8 @@ Emits Event objects (gate, message, agent_state) to an injectable event sink.
 """
 import os
 import time
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from agents.envelope import get_or_create_internal_token, sign_envelope
 from arena.interfaces import Envelope, Gate, GateResult, WorkerOutcome
@@ -16,10 +17,10 @@ from contracts.models import Event
 class Dispatcher:
     def __init__(
         self,
-        gate: Optional[Gate] = None,
-        worker: Optional[Any] = None,
-        event_sink: Optional[Callable[[Event], Any]] = None,
-        internal_token: Optional[str] = None,
+        gate: Gate | None = None,
+        worker: Any | None = None,
+        event_sink: Callable[[Event], Any] | None = None,
+        internal_token: str | None = None,
         run_id: str = "run-001",
         round_id: str = "R0",
     ):
@@ -46,7 +47,7 @@ class Dispatcher:
         start_time = time.perf_counter()
 
         # Pre-dispatch gate check at L1 and L2
-        gate_res: Optional[GateResult] = None
+        gate_res: GateResult | None = None
         if envelope.profile in ("L1", "L2") and self.gate is not None:
             gate_res = await self.gate.screen(envelope.text, stage="pre_dispatch")
 

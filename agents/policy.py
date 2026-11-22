@@ -6,7 +6,7 @@ Applies memory write deny patterns, max length, fact-only formatting, and report
 import logging
 import multiprocessing
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from contracts.models import Patch
 
@@ -103,12 +103,12 @@ def safe_regex_sub(pat_str: str, repl: str, text: str, timeout: float = 0.05) ->
 
 
 class Policy:
-    def __init__(self, patch: Optional[Union[Dict[str, Any], Patch]] = None):
+    def __init__(self, patch: dict[str, Any] | Patch | None = None):
         self.raw_patch = patch
-        self.deny_patterns: List[str] = []
-        self.max_len: Optional[int] = None
-        self.note_format: Optional[str] = None
-        self.redact_patterns: List[str] = []
+        self.deny_patterns: list[str] = []
+        self.max_len: int | None = None
+        self.note_format: str | None = None
+        self.redact_patterns: list[str] = []
         self.screen_memory_reads: bool = False
         self.screen_tool_outputs: bool = False
         self.threshold: float = 0.3
@@ -135,7 +135,7 @@ class Policy:
             self.screen_tool_outputs = bool(gate_cfg.get("screen_tool_outputs", False))
             self.threshold = float(gate_cfg.get("threshold", 0.3))
 
-    def allow_memory_write(self, text: str) -> Tuple[bool, str]:
+    def allow_memory_write(self, text: str) -> tuple[bool, str]:
         """
         Determines if a memory note write is permitted.
         Returns (allowed: bool, reason: str).

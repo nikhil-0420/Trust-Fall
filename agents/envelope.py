@@ -9,7 +9,7 @@ import json
 import os
 import secrets
 from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any
 
 from arena.interfaces import Envelope
 
@@ -56,7 +56,7 @@ def canonical_envelope_bytes(envelope: Envelope) -> bytes:
     return json.dumps(canonical_dict, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def sign_envelope(envelope: Envelope, token: str) -> Dict[str, Any]:
+def sign_envelope(envelope: Envelope, token: str) -> dict[str, Any]:
     """Signs an Envelope using HMAC-SHA256 and returns envelope dictionary with signature."""
     payload_bytes = canonical_envelope_bytes(envelope)
     sig = hmac.new(token.encode("utf-8"), payload_bytes, hashlib.sha256).hexdigest()
@@ -66,9 +66,9 @@ def sign_envelope(envelope: Envelope, token: str) -> Dict[str, Any]:
 
 
 def verify_envelope(
-    raw: Union[Dict[str, Any], str, Envelope],
+    raw: dict[str, Any] | str | Envelope,
     token: str,
-) -> Tuple[bool, Envelope, bool]:
+) -> tuple[bool, Envelope, bool]:
     """
     Verifies the HMAC-SHA256 signature of an envelope.
     Returns (valid: bool, envelope: Envelope, flagged: bool).

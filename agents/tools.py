@@ -5,9 +5,9 @@ Only these three tools are permitted. No HTTP, shell, or arbitrary file tools.
 """
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 _DEFAULT_STATE_DIR = Path(".")
 
@@ -18,9 +18,9 @@ def set_default_state_dir(path: Path) -> None:
 
 
 def read_memory(
-    state_dir: Optional[Path] = None,
+    state_dir: Path | None = None,
     policy: Any = None,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """
     Read memory notes from memory.json in state_dir.
     Returns list of dicts: [{"id": ..., "text": ..., "created_at": ...}].
@@ -42,9 +42,9 @@ def read_memory(
 
 def write_memory(
     text: str,
-    state_dir: Optional[Path] = None,
+    state_dir: Path | None = None,
     policy: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Write a memory note to memory.json in state_dir.
     Applies policy check if policy is provided.
@@ -58,7 +58,7 @@ def write_memory(
     target_dir.mkdir(parents=True, exist_ok=True)
     memory_file = target_dir / "memory.json"
 
-    notes: List[Dict[str, Any]] = []
+    notes: list[dict[str, Any]] = []
     if memory_file.exists():
         try:
             data = json.loads(memory_file.read_text(encoding="utf-8"))
@@ -70,7 +70,7 @@ def write_memory(
             notes = []
 
     note_id = f"note-{uuid.uuid4().hex[:8]}"
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
     new_note = {"id": note_id, "text": text, "created_at": created_at}
     notes.append(new_note)
 
@@ -83,7 +83,7 @@ def send_report(
     status: str,
     summary: str,
     policy: Any = None,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Sends customer support report. Applies redaction policy if configured.
     """

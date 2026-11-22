@@ -9,9 +9,10 @@ import base64
 import json
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
+
 from arena.interfaces import Sandbox
 
 logger = logging.getLogger(__name__)
@@ -23,11 +24,11 @@ DEFAULT_SANDBOX_BASE = "https://sandbox.agent37.app"
 class Agent37Sandbox(Sandbox):
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        instance_id: Optional[str] = None,
+        api_key: str | None = None,
+        instance_id: str | None = None,
         api_base: str = DEFAULT_API_BASE,
         sandbox_base: str = DEFAULT_SANDBOX_BASE,
-        transport: Optional[httpx.AsyncBaseTransport] = None,
+        transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.api_key = api_key or os.getenv("AGENT37_API_KEY", "")
         self.instance_id = instance_id or os.getenv("SANDBOX_ID", "")
@@ -38,7 +39,7 @@ class Agent37Sandbox(Sandbox):
     def _get_client(self, timeout: float = 30.0) -> httpx.AsyncClient:
         return httpx.AsyncClient(timeout=timeout, transport=self._custom_transport)
 
-    async def exec_command(self, command: str, timeout: float = 30.0) -> Dict[str, Any]:
+    async def exec_command(self, command: str, timeout: float = 30.0) -> dict[str, Any]:
         """Executes a command inside the instance via the sandbox exec API."""
         if not self.instance_id:
             raise ValueError("SANDBOX_ID / instance_id is required to exec commands")

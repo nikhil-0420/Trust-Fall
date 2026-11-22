@@ -5,7 +5,6 @@ Communicates with the internal gate screening service over HTTP.
 Fails CLOSED on any error or timeout (returns ERROR and blocked=True).
 """
 import os
-from typing import Optional
 
 import httpx
 
@@ -16,9 +15,9 @@ from arena.mocks import MockGate
 class GateClient(Gate):
     def __init__(
         self,
-        gate_url: Optional[str] = None,
-        internal_token: Optional[str] = None,
-        use_mock: Optional[bool] = None,
+        gate_url: str | None = None,
+        internal_token: str | None = None,
+        use_mock: bool | None = None,
     ):
         self.gate_url = gate_url or os.getenv("GATE_URL", "http://127.0.0.1:8000")
         self.internal_token = internal_token or os.getenv("INTERNAL_TOKEN", "")

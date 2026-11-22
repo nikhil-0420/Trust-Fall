@@ -9,9 +9,9 @@ import asyncio
 import json
 import logging
 import os
-import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 import yaml
 from dotenv import load_dotenv
 
@@ -27,9 +27,9 @@ from arena.interfaces import Envelope
 class BandWorkerAgent:
     def __init__(
         self,
-        worker_core: Optional[WorkerCore] = None,
-        config_path: Optional[Path] = None,
-        dispatcher_handle: Optional[str] = None,
+        worker_core: WorkerCore | None = None,
+        config_path: Path | None = None,
+        dispatcher_handle: str | None = None,
     ):
         self.config_path = config_path or Path("agent_config.yaml")
         if not self.config_path.exists():
@@ -46,7 +46,7 @@ class BandWorkerAgent:
             state_dir=Path(os.getenv("STATE_DIR", "data/worker_state")),
         )
 
-    async def handle_band_message(self, message_text: str) -> Dict[str, Any]:
+    async def handle_band_message(self, message_text: str) -> dict[str, Any]:
         """
         Parses inbound message into an Envelope or signed dict,
         executes WorkerCore, and produces the report text for the Dispatcher.

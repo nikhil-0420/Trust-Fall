@@ -8,7 +8,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 from google import genai
 from google.genai import types
@@ -18,15 +17,14 @@ from arena.interfaces import LLM
 
 class BudgetExceeded(Exception):
     """Raised when LLM calls exceed 80% of daily cap."""
-    pass
 
 
 class GeminiLLM(LLM):
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model_name: Optional[str] = None,
-        cache_dir: Optional[Path] = None,
+        api_key: str | None = None,
+        model_name: str | None = None,
+        cache_dir: Path | None = None,
     ):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         self.model_name = model_name or os.getenv("MODEL_NAME", "gemini-3.5-flash-lite")

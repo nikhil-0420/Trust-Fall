@@ -9,12 +9,11 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from agents.policy import INSTRUCTION_PHRASES
 from arena.factory import get_gate_client, get_llm
-from arena.interfaces import Envelope, Gate, LLM
-from arena.mocks import MockGate
+from arena.interfaces import LLM, Envelope, Gate
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +24,13 @@ def grant_refund(
     state_dir: Path,
     reason: str = "Customer request",
     flagged: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Appends an entry to refund_ledger.json in state_dir (fake data only)."""
     target_dir = Path(state_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
     ledger_file = target_dir / "refund_ledger.json"
 
-    entries: List[Dict[str, Any]] = []
+    entries: list[dict[str, Any]] = []
     if ledger_file.exists():
         try:
             data = json.loads(ledger_file.read_text(encoding="utf-8"))
@@ -45,7 +44,7 @@ def grant_refund(
         "amount": amount,
         "reason": reason,
         "flagged": flagged,
-        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
     }
     entries.append(record)
     ledger_file.write_text(json.dumps(entries, indent=2), encoding="utf-8")
@@ -55,15 +54,15 @@ def grant_refund(
 class AnalystCore:
     def __init__(
         self,
-        llm: Optional[LLM] = None,
-        state_dir: Optional[Path] = None,
-        gate: Optional[Gate] = None,
+        llm: LLM | None = None,
+        state_dir: Path | None = None,
+        gate: Gate | None = None,
     ):
         self.llm = llm or get_llm()
         self.state_dir = Path(state_dir or "data/analyst_state")
         self.gate = gate or get_gate_client()
 
-    def _validate_report_schema(self, report_text: str) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+    def _validate_report_schema(self, report_text: str) -> tuple[bool, dict[str, Any] | None, str]:
         """
         Validates that report matches strict schema:
         - Must contain or be valid JSON with ticket_id, status, summary
@@ -114,7 +113,7 @@ class AnalystCore:
 
         return True, parsed, ""
 
-    async def handle_report(self, report_text: str, guard: bool = False) -> Dict[str, Any]:
+    async def handle_report(self, report_text: str, guard: bool = False) -> dict[str, Any]:
         """
         Processes an incoming Worker report.
         When guard is True:
@@ -189,7 +188,7 @@ async def run_contagion_case(
     analyst: AnalystCore,
     attack_text: str,
     guard: bool,
-) -> Dict[str, bool]:
+) -> dict[str, bool]:
     """
     Executes an end-to-end multi-agent contagion attack scenario:
     1. Sends attack to WorkerCore.

@@ -9,11 +9,11 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from agents import tools
 from agents.envelope import verify_envelope
-from arena.interfaces import Envelope, Gate, LLM, WorkerOutcome
+from arena.interfaces import LLM, Envelope, Gate, WorkerOutcome
 
 DEFAULT_CANARY = "CANARY-ab12cd-DEMO-ONLY"
 
@@ -39,14 +39,14 @@ class WorkerCore:
         llm: LLM,
         state_dir: Path,
         policy: Any = None,
-        gate: Optional[Gate] = None,
+        gate: Gate | None = None,
     ):
         self.llm = llm
         self.state_dir = Path(state_dir)
         self.policy = policy
         self.gate = gate
         self._prompts_dir = Path(__file__).parent / "prompts"
-        self._screening_cache: Dict[str, Any] = {}
+        self._screening_cache: dict[str, Any] = {}
 
     def _load_prompts(self) -> tuple[str, str]:
         sys_path = self._prompts_dir / "worker_system.md"
@@ -79,7 +79,7 @@ class WorkerCore:
                 return canary
         return DEFAULT_CANARY
 
-    async def _format_memory_notes(self, active_policy: Any) -> Tuple[str, bool]:
+    async def _format_memory_notes(self, active_policy: Any) -> tuple[str, bool]:
         notes = tools.read_memory(state_dir=self.state_dir, policy=active_policy)
         if not notes:
             return "None", False
@@ -113,12 +113,12 @@ class WorkerCore:
         res_str = "\n".join(valid_notes) if valid_notes else "None"
         return res_str, notes_blocked
 
-    async def handle(self, envelope: Union[Envelope, Dict[str, Any]]) -> WorkerOutcome:
+    async def handle(self, envelope: Envelope | dict[str, Any]) -> WorkerOutcome:
         start_time = time.perf_counter()
         llm_calls = 0
-        error: Optional[str] = None
+        error: str | None = None
         policy_denied: bool = False
-        outbound_messages: List[str] = []
+        outbound_messages: list[str] = []
 
         # Envelope verification and fail-safe profile resolution
         token = os.getenv("INTERNAL_TOKEN")

@@ -7,10 +7,10 @@ Enforces validation with contracts.patch_validate.validate_patch.
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from arena.factory import get_llm
-from arena.interfaces import BlueAgent, LLM
+from arena.interfaces import LLM, BlueAgent
 from contracts.patch_validate import validate_patch
 
 logger = logging.getLogger(__name__)
@@ -45,10 +45,10 @@ class ScriptedBlue(BlueAgent):
 
     async def propose_patch(
         self,
-        incident_log: List[Dict[str, Any]],
-        previous_patch: Optional[Dict[str, Any]] = None,
-        rejected_reason: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        incident_log: list[dict[str, Any]],
+        previous_patch: dict[str, Any] | None = None,
+        rejected_reason: str | None = None,
+    ) -> dict[str, Any]:
         prev_version = 0
         if previous_patch and isinstance(previous_patch, dict):
             prev_version = previous_patch.get("version", 0)
@@ -112,7 +112,7 @@ class LLMBlue(BlueAgent):
     Strictly validates against validate_patch with at most 1 retry.
     """
 
-    def __init__(self, llm: Optional[LLM] = None):
+    def __init__(self, llm: LLM | None = None):
         self.llm = llm or get_llm()
         self._prompt_path = Path(__file__).parent / "prompts" / "blue_system.md"
 
@@ -123,10 +123,10 @@ class LLMBlue(BlueAgent):
 
     async def propose_patch(
         self,
-        incident_log: List[Dict[str, Any]],
-        previous_patch: Optional[Dict[str, Any]] = None,
-        rejected_reason: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        incident_log: list[dict[str, Any]],
+        previous_patch: dict[str, Any] | None = None,
+        rejected_reason: str | None = None,
+    ) -> dict[str, Any]:
         system_prompt = self._load_system_prompt()
 
         task_prompt = (
@@ -184,7 +184,7 @@ class LLMBlue(BlueAgent):
 
         return DEFAULT_SAFE_PATCH
 
-    def _parse_json(self, text: str) -> Optional[Dict[str, Any]]:
+    def _parse_json(self, text: str) -> dict[str, Any] | None:
         text = text.strip()
         if text.startswith("```"):
             lines = text.splitlines()

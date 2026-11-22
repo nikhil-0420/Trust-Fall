@@ -6,13 +6,13 @@ Never prints secrets.
 """
 import os
 from pathlib import Path
-from typing import Optional
+
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-def sync_band_config(output_path: Optional[Path] = None) -> Path:
+def sync_band_config(output_path: Path | None = None) -> Path:
     target = output_path or Path("agent_config.yaml")
 
     agent_a_id = os.getenv("BAND_AGENT_A_ID", "")
