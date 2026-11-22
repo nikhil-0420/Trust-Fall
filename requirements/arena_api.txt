@@ -1,0 +1,3 @@
+# Owned by Nehaa
+# Additional dependencies for Arena API (sse-starlette, etc.)
+sse-starlette

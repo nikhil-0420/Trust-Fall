@@ -1,0 +1,6 @@
+# Owned by Nikhil
+band-sdk
+google-genai
+langgraph
+langchain
+langchain-google-genai

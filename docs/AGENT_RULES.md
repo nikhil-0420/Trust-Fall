@@ -1,0 +1,13 @@
+# Agent Autonomy Rules
+
+Applies to both Nikhil and Nehaa unless specified. When executing as Nikhil, `OWNER = NIKHIL`. When executing as Nehaa, `OWNER = NEHAA`.
+
+1. **NEVER stop to ask questions.** If information or a decision is missing, choose the safest reasonable assumption, append an entry to `docs/QUESTIONS_<OWNER>.md` (UTC time, phase, question, assumption made, how to reverse it) and keep going.
+2. **If blocked** (missing key, a step only a human can do in a browser, service down, same error 3 times, or a task over 15 minutes): append to `docs/BLOCKERS_<OWNER>.md` (what, why, exact error text without secrets, what a human must do), switch to the mock/fallback path, and continue with the next task. Never wait for input.
+3. **Resume safely:** at the start read `docs/STATUS_<OWNER>.md` and skip tasks already marked DONE. After EVERY task update STATUS (task id, DONE/PARTIAL/BLOCKED, tests run, commit hash, next).
+4. **Mock-first:** default env `USE_MOCKS=1` and `LIVE_APPROVED=0`. Real LLM / Lyzr / Agent37 / BAND calls happen ONLY in tasks marked LIVE and ONLY if `USE_MOCKS=0` and `LIVE_APPROVED=1` in `.env`. Never set those flags yourself. Otherwise run the mock path and write "LIVE SKIPPED" in STATUS. Every real call is appended to `docs/CALL_LEDGER.md` (time, service, purpose, count) and obeys the per-task cap.
+5. **Secrets:** read keys only from `.env` via `python-dotenv`. Never print, log, echo, commit, or paste a key. Never ask for keys. If a key is missing, log a blocker and use mocks. Run `python scripts/secret_scan.py` before every commit.
+6. **Git:** work on `main`. Before each push: `git pull --rebase origin main`, run `pytest -q` (mock mode), then `git push origin main`. Commit message prefix `[<TASKID>]`. Never force-push or rewrite history. If a rebase conflicts in a file you don't own, keep the remote version (`git checkout origin/main -- <file>`), log it in QUESTIONS, continue; in your own files prefer yours. If push or tests still fail after 3 attempts, push to branch `wip/<owner>-<phase>` instead, log a blocker, continue.
+7. **Ownership:** edit only paths you own (`docs/OWNERSHIP.md`). Need a change elsewhere? Append it to `docs/REQUESTS_TO_<OTHER>.md` and work around it with an adapter or mock. Contracts are additive-only; log additions in `docs/CONTRACT_CHANGES.md`.
+8. **Cloud safety:** never create more than one Agent37 sandbox, never delete or stop a resource you did not create in this run, never loop on paid APIs, run long commands in the background with timeouts (kill after 10 minutes).
+9. **Finish** by printing a final summary (done / partial / blocked, open questions, what a human must do) and updating STATUS. Do not wait for confirmation.

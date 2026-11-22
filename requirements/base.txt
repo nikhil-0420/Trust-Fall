@@ -1,0 +1,9 @@
+pydantic>=2.0
+python-dotenv
+httpx
+pytest
+pytest-asyncio
+ruff
+fastapi
+uvicorn
+jsonschema

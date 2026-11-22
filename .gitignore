@@ -1,0 +1,28 @@
+# Environment and secrets
+.env
+agent_config.yaml
+*.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+
+# Node / Web
+node_modules/
+web/dist/
+web/build/
+.npm/
+
+# Data and logs
+data/runs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
