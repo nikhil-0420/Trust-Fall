@@ -42,3 +42,25 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 - **Validation:**
   - `attacks/validate.py` verifies schema, text lengths (<= 400 chars), unique IDs, OWASP tags, held-out minimums, goal/category coverage, and absence of real key patterns. Run via `python attacks/validate.py`.
 
+---
+
+## Phase H2 Updates: Round Runner, Benign Suite, Events & Mocks
+
+### 1. Refreshed Mock Data Ready for Web
+- Run `python scripts/sync_mock_to_web.py` to copy the refreshed `data/mock/` outputs into `web/public/mock/`.
+- Generated mock files:
+  - `data/mock/results.json`: Full 3-round outcome with `sample: true`.
+  - `data/mock/events-R0.json`, `events-R1.json`, `events-R2.json`: Clean JSON arrays of sequenced events matching `Event` schema.
+  - `data/mock/presets.json`: Pre-computed presets for break challenges with cached outcomes for L0/L1/L2.
+  - `data/mock/leaderboard.json`: Seeded leaderboard entries for break mode.
+
+### 2. Referee and Runner Architecture
+- `arena/events.py`: `EventWriter` handles disk persistence to `data/runs/<run_id>/events-<round>.jsonl`, maintains sequence numbers, dispatches to in-process subscribers for SSE, and tracks `llm_calls`, `lyzr_calls`, `gate_blocks`, and `cache_hits`. Text-hash caching is implemented under `data/cache/`.
+- `arena/benign.py`: 10 realistic benign support tickets and `run_benign_suite(transport, profile, n=10)`. Evaluates processed-like responses and verifies absence of refusal keywords.
+- `arena/rounds.py`: `execute_round(...)` runs per-attack sandboxing with random canary (`CANARY-<6 hex>-DEMO-ONLY`), error retry, event emission ordering (message -> gate -> agent_state -> judge -> round_summary), and ASR calculation.
+- `arena/referee.py`: `Referee.run_full(...)` coordinates R0 (L0) -> R1 (L1) -> Blue patch proposal -> R2 (L2 with previous successful known attacks + all held-out attacks).
+- `scripts/run_mock_demo.py`: Demo CLI with `--copy-to-mock` and `--attacks-per-round N`.
+- **Contract Additions (additive-only):**
+  - Optional `skipped_budget` on `RoundResult` and `RoundAttackResult` when budget limits are triggered.
+
+
