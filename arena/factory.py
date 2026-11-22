@@ -154,14 +154,21 @@ def get_gate() -> Gate:
 
 def get_red() -> RedAgent:
     if _is_mock_mode():
-        return ScriptedRed()
+        from agents.red import AdaptiveRed
+        return AdaptiveRed(enable_mutation=False)
 
     impl = os.getenv("RED_IMPL", "scripted").strip().lower()
     if impl == "llm":
         try:
-            from agents.red import LLMRedAgent
-            return LLMRedAgent(llm=get_llm())
+            from agents.red import AdaptiveRed
+            return AdaptiveRed(llm=get_llm(), enable_mutation=True)
         except Exception as e:
             warnings.warn(f"Failed to load LLMRedAgent ({e}), falling back to ScriptedRed")
+            return ScriptedRed()
+    elif impl in ("scripted", "adaptive"):
+        try:
+            from agents.red import AdaptiveRed
+            return AdaptiveRed(enable_mutation=False)
+        except Exception:
             return ScriptedRed()
     return ScriptedRed()

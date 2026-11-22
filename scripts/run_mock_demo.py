@@ -16,6 +16,7 @@ repo_root = Path(__file__).resolve().parent.parent
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
+from agents.red import AdaptiveRed
 from arena.budget_hooks import LocalBudget
 from arena.events import EventWriter
 from arena.mocks import (
@@ -24,7 +25,6 @@ from arena.mocks import (
     MockLLM,
     MockTransport,
     ScriptedBlue,
-    ScriptedRed,
 )
 from arena.referee import Referee
 from contracts.models import Attack, Results
@@ -95,7 +95,7 @@ async def main():
     sandbox = FakeSandbox()
     gate = MockGate()
     transport = MockTransport(sandbox=sandbox, gate=gate)
-    red = ScriptedRed()
+    red = AdaptiveRed(attacks_per_round=args.attacks_per_round)
     blue = ScriptedBlue()
     budget = LocalBudget()
     events = EventWriter(run_id=run_id, base_dir="data/runs", cache_dir="data/cache")
@@ -128,6 +128,11 @@ async def main():
         heldout_str = f"{r.asr_heldout:.1%}" if r.asr_heldout is not None else "N/A"
         benign_str = f"{r.benign.passed}/{r.benign.total}"
         print(f"{r.id:<6} | {r.label:<12} | {r.asr:<7.1%} | {r.asr_known:<10.1%} | {heldout_str:<12} | {benign_str:<8} | {r.gate_blocks:<12}")
+
+    print("\nAttack Categories Per Round (Adaptive Red):")
+    for r in results.rounds:
+        cats = [att.category for att in r.attacks]
+        print(f"  {r.id} ({len(cats)} attacks): {', '.join(cats)}")
 
     print("\nCalls Summary:")
     print(f"  LLM calls:  {results.budget.llm_calls}")

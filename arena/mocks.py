@@ -328,7 +328,7 @@ class ScriptedBlue(BlueAgent):
 
 
 class ScriptedRed(RedAgent):
-    """Picks attacks from library: blunt first, then indirect."""
+    """Picks attacks from library: blunt first, then indirect. Enforces held-out rule."""
 
     async def next_attacks(
         self,
@@ -339,12 +339,22 @@ class ScriptedRed(RedAgent):
         if not library:
             return []
 
-        blunt = [a for a in library if a.category in {"direct", "roleplay", "authority"}]
-        indirect = [a for a in library if a.category not in {"direct", "roleplay", "authority"}]
+        known = [a for a in library if a.known]
+        heldout = [a for a in library if not a.known]
+
+        blunt = [a for a in known if a.category in {"direct", "roleplay", "authority"}]
+        indirect = [a for a in known if a.category not in {"direct", "roleplay", "authority"}]
 
         if round_id == "R0":
-            return blunt if blunt else library[:3]
+            return blunt if blunt else known[:6]
         elif round_id == "R1":
-            return indirect if indirect else library
+            return indirect if indirect else known
         else:
-            return library
+            # R2: previous successes + all held-out
+            successful_known_ids = {
+                h.get("id") or h.get("attack_id")
+                for h in history
+                if h.get("outcome") == "succeeded"
+            }
+            r2_known = [a for a in known if a.id in successful_known_ids] or known[:3]
+            return r2_known + heldout

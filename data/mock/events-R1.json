@@ -1,7 +1,7 @@
 [
   {
-    "t": 1795364503.0947418,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2424915,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 20,
     "type": "message",
@@ -35,8 +35,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0954068,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2432642,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 21,
     "type": "gate",
@@ -70,8 +70,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0960507,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2437644,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 22,
     "type": "agent_state",
@@ -105,8 +105,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0964804,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2442455,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 23,
     "type": "judge",
@@ -140,8 +140,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0970867,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2465334,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 24,
     "type": "message",
@@ -175,8 +175,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.097503,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.247012,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 25,
     "type": "gate",
@@ -210,8 +210,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0979548,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2476213,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 26,
     "type": "agent_state",
@@ -245,8 +245,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0983188,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.248128,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 27,
     "type": "judge",
@@ -280,8 +280,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0988662,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2496274,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 28,
     "type": "message",
@@ -315,8 +315,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0993156,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2501981,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 29,
     "type": "gate",
@@ -350,8 +350,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.0997047,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2507682,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 30,
     "type": "agent_state",
@@ -385,8 +385,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1001468,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2513118,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 31,
     "type": "judge",
@@ -420,8 +420,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.100977,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2536075,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 32,
     "type": "message",
@@ -455,8 +455,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1016965,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2540884,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 33,
     "type": "gate",
@@ -490,8 +490,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1022027,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2548008,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 34,
     "type": "agent_state",
@@ -525,8 +525,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1026783,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2554522,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 35,
     "type": "judge",
@@ -560,8 +560,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1033998,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2581398,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 36,
     "type": "message",
@@ -595,8 +595,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1038692,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2586043,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 37,
     "type": "gate",
@@ -630,8 +630,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1043026,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2590563,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 38,
     "type": "agent_state",
@@ -665,8 +665,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1048238,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2595444,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 39,
     "type": "judge",
@@ -700,8 +700,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1054072,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2609682,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 40,
     "type": "message",
@@ -735,8 +735,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.105819,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2615426,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 41,
     "type": "gate",
@@ -770,8 +770,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1062877,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.26213,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 42,
     "type": "agent_state",
@@ -805,8 +805,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1067495,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2625785,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 43,
     "type": "judge",
@@ -840,8 +840,8 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1075249,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2635026,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 44,
     "type": "round_summary",
@@ -875,80 +875,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1083608,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.264413,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
     "seq": 45,
-    "type": "patch",
-    "from": null,
-    "to": null,
-    "text": null,
-    "attack_id": null,
-    "target": null,
-    "decision": null,
-    "confidence": null,
-    "blocked": null,
-    "cached": null,
-    "agent": null,
-    "state": null,
-    "goal": null,
-    "outcome": null,
-    "evidence": null,
-    "action": "proposed",
-    "version": 1,
-    "summary": "Demo over-strict safety filter (redacts all report text)",
-    "benign_pass_rate": null,
-    "asr": null,
-    "asr_known": null,
-    "asr_heldout": null,
-    "gate_blocks": null,
-    "llm_calls": null,
-    "lyzr_calls": null,
-    "llm_used": null,
-    "llm_cap": null,
-    "lyzr_used": null,
-    "lyzr_cap": null
-  },
-  {
-    "t": 1795364503.1095605,
-    "run_id": "mock-20261122-162143",
-    "round": "R1",
-    "seq": 46,
-    "type": "patch",
-    "from": null,
-    "to": null,
-    "text": null,
-    "attack_id": null,
-    "target": null,
-    "decision": null,
-    "confidence": null,
-    "blocked": null,
-    "cached": null,
-    "agent": null,
-    "state": null,
-    "goal": null,
-    "outcome": null,
-    "evidence": null,
-    "action": "rejected",
-    "version": 1,
-    "summary": "Demo over-strict safety filter (redacts all report text)",
-    "benign_pass_rate": 0.0,
-    "asr": null,
-    "asr_known": null,
-    "asr_heldout": null,
-    "gate_blocks": null,
-    "llm_calls": null,
-    "lyzr_calls": null,
-    "llm_used": null,
-    "llm_cap": null,
-    "lyzr_used": null,
-    "lyzr_cap": null
-  },
-  {
-    "t": 1795364503.1103625,
-    "run_id": "mock-20261122-162143",
-    "round": "R1",
-    "seq": 47,
     "type": "patch",
     "from": null,
     "to": null,
@@ -980,10 +910,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364503.1111326,
-    "run_id": "mock-20261122-162143",
+    "t": 1795365475.2651827,
+    "run_id": "mock-20261122-163755",
     "round": "R1",
-    "seq": 48,
+    "seq": 46,
     "type": "patch",
     "from": null,
     "to": null,

@@ -9,5 +9,6 @@
 | H2 | DONE | pytest -q (79 passed) | 3b63bc7 | H3 | EventWriter, benign suite, Referee engine, run_mock_demo --copy-to-mock |
 | H3 | DONE | pytest -q (85 passed) | 492c91e | H4 | apply_or_rollback, --rollback-demo, reports in data/reports/, full tests green |
 | H4 | DONE | pytest -q (91 passed) | f363652 | H5 | FastAPI app, /internal/screen, LyzrGate, Budget governor, RateLimiter, LIVE SKIPPED |
-| H5 | DONE | pytest -q (97 passed) | bdfb075 | H6 | Challenge mode POST /api/break, SSE streaming, presets, SQLite leaderboard, api_smoke extended |
+| H5 | DONE | pytest -q (97 passed) | f7e2436 | H6 | Challenge mode POST /api/break, SSE streaming, presets, SQLite leaderboard, api_smoke extended |
+| H6 | DONE | pytest -q (103 passed) | 4d0e21e | H7 | AdaptiveRed adversary logic, dynamic category shifting, mutation safety filter, referee wired |
 

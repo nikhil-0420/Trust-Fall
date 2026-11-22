@@ -102,14 +102,23 @@ class Referee:
         known_attacks = [a for a in library if a.known]
         heldout_attacks = [a for a in library if not a.known]
 
-        # Select initial known attacks for R0 and R1
-        r0_attacks = known_attacks[:attacks_per_round]
+        # Select initial known attacks for R0 using red agent
+        try:
+            r0_attacks = await self.red.next_attacks("R0", library, [])
+        except Exception:
+            r0_attacks = known_attacks[:attacks_per_round]
 
         # 2. R0: Baseline (L0)
         r0_res = await self.run_round("R0", "L0", r0_attacks, patch_version=0)
 
-        # 3. R1: Screening Gate (L1)
-        r1_res = await self.run_round("R1", "L1", r0_attacks, patch_version=0)
+        # 3. R1: Screening Gate (L1) with adaptive red selection
+        try:
+            history_r0 = [att.model_dump() for att in r0_res.attacks]
+            r1_attacks = await self.red.next_attacks("R1", library, history_r0)
+        except Exception:
+            r1_attacks = r0_attacks
+
+        r1_res = await self.run_round("R1", "L1", r1_attacks, patch_version=0)
 
         # 4. Collect incident log of attacks that succeeded in R1 (known only!)
         incident_log = []
@@ -145,16 +154,19 @@ class Referee:
         patch_version = patch_decision.active_version
 
         # 6. R2: Patched (L2)
-        # All previously successful known attacks + ALL held-out attacks
-        successful_known_ids = {
-            att.id for att in r0_res.attacks if att.outcome == "succeeded"
-        } | {att.id for att in r1_res.attacks if att.outcome == "succeeded"}
+        # Ask Red agent for R2 attack selection (all previous successes + all held-out)
+        try:
+            history_all = [att.model_dump() for att in r0_res.attacks] + [
+                att.model_dump() for att in r1_res.attacks
+            ]
+            r2_attacks = await self.red.next_attacks("R2", library, history_all)
+        except Exception:
+            successful_known_ids = {
+                att.id for att in r0_res.attacks if att.outcome == "succeeded"
+            } | {att.id for att in r1_res.attacks if att.outcome == "succeeded"}
+            r2_known = [a for a in known_attacks if a.id in successful_known_ids] or r0_attacks[:3]
+            r2_attacks = r2_known + heldout_attacks
 
-        r2_known = [a for a in known_attacks if a.id in successful_known_ids]
-        if not r2_known:
-            r2_known = r0_attacks[:3]
-
-        r2_attacks = r2_known + heldout_attacks
         r2_res = await self.run_round("R2", "L2", r2_attacks, patch_version=patch_version)
 
         # 7. Compile Results model

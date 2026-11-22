@@ -160,6 +160,23 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 - Returned text previews are plain text escaped for display (control chars stripped, capped at 200 chars).
 - Admin delete route requires `X-Internal-Token`.
 
+---
+
+## Phase H6 Updates: Red Adversary Selection Logic (`agents/red.py`)
+
+### 1. AdaptiveRed Policy & Behavior
+- **Pure Function Selection:** Deterministic policy taking `(round_id, library, history)` with fixed tie-break by attack ID.
+- **R0 (Baseline):** Distributes across categories starting with blunt attacks (`direct`, `roleplay`, `authority`) then general categories, up to `ATTACKS_PER_ROUND`.
+- **R1 (Lyzr Gate):** Analyzes historical outcomes in `history`. Categories whose attacks were blocked by the screening gate are down-weighted and replaced by evasive categories (`indirect`, `memory_poison`, `tool_abuse`, `format`, `obfuscation`, `payload_split`).
+- **R2 (Patched):** Selects ALL known attacks that succeeded in earlier rounds plus ALL held-out attacks (`known=false`).
+- **Held-out Protection:** Held-out attack texts are strictly barred from appearing in R0 or R1.
+
+### 2. Single LLM Mutation & Safety Guard
+- In `RED_IMPL=llm` mode, Red can perform at most **1 mutation per round** rewriting a blocked attack into a subtle indirect variant.
+- Output is validated against `Attack` schema and passes safety filters (length 10-400 chars, no code blocks, no URLs, no API key patterns).
+- Registered in `arena/factory.py` under both `RED_IMPL=llm` and `RED_IMPL=scripted`.
+
+
 
 
 
