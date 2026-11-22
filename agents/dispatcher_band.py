@@ -127,8 +127,12 @@ class BandDispatcherAgent:
             if gate_res.blocked or gate_res.decision in ("INJECTION", "ERROR"):
                 reply = f"[Worker Report] [TICKET:{env.ticket_id}]: BLOCKED BY GATE - {gate_res.decision}"
                 red_id = os.getenv("BAND_AGENT_RED_ID", "")
-                mentions = [{"handle": "nikhil.guddanti/red-agent", "id": red_id, "name": "Red Agent"}] if red_id else None
-                self._post_to_room(reply, mentions=mentions)
+                mentions = []
+                if red_id:
+                    mentions.append({"handle": "nikhil.guddanti/red-agent", "id": red_id, "name": "Red Agent"})
+                if self.agent_id:
+                    mentions.append({"handle": "nikhil.guddanti/agent-a", "id": self.agent_id, "name": "Dispatcher"})
+                self._post_to_room(reply, mentions=mentions if mentions else None)
                 return
 
         # Sign envelope and forward to Worker

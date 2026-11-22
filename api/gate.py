@@ -36,15 +36,21 @@ class LyzrGate(Gate):
         self.timeout_s = timeout_s
         self.mock_gate = MockGate()
 
-    def _hash(self, text: str) -> str:
-        return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
+    def _hash(self, text: str, impl: str = "lyzr") -> str:
+        # Cache key includes implementation name (lyzr vs mock)
+        return hashlib.sha256(f"{impl}:{text.strip()}".encode("utf-8")).hexdigest()
 
-    def _read_cache(self, text_hash: str) -> dict[str, Any] | None:
+    def _read_cache(self, text_hash: str, required_impl: str | None = None) -> dict[str, Any] | None:
         cf = self.cache_dir / f"{text_hash}.json"
         if cf.exists():
             try:
                 with open(cf, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    if required_impl:
+                        # Ignore entries not matching the required implementation (e.g. untagged or mock-tagged)
+                        if data.get("impl") != required_impl:
+                            return None
+                    return data
             except Exception:
                 return None
         return None
@@ -61,15 +67,17 @@ class LyzrGate(Gate):
         """
         Screen text for prompt injection.
         - Cap at 500 characters
-        - Check disk cache (zero live calls on hit)
+        - Check disk cache with implementation provenance (zero live calls on hit)
         - In mock mode (USE_MOCKS=1 or no key), use MockGate
         - On timeout (5s), error, or budget exhaustion -> FAIL CLOSED (blocked=True, decision=ERROR)
         """
         truncated_text = text[:500]
-        text_hash = self._hash(truncated_text)
+        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in {"1", "true", "yes"}
+        target_impl = "mock" if (use_mocks or not self.api_key) else "lyzr"
+        text_hash = self._hash(truncated_text, impl=target_impl)
 
         # 1. Disk Cache check
-        cached_val = self._read_cache(text_hash)
+        cached_val = self._read_cache(text_hash, required_impl=target_impl)
         if cached_val is not None:
             return GateResult(
                 decision=cached_val["decision"],
@@ -79,13 +87,13 @@ class LyzrGate(Gate):
             )
 
         # 2. Check mock mode
-        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in {"1", "true", "yes"}
         if use_mocks or not self.api_key:
             res = await self.mock_gate.screen(truncated_text, stage)
-            # Store in cache
+            # Store in cache tagged with mock provenance
             self._write_cache(
                 text_hash,
                 {
+                    "impl": "mock",
                     "decision": res.decision,
                     "confidence": res.confidence,
                     "blocked": res.blocked,
@@ -127,10 +135,11 @@ class LyzrGate(Gate):
             decision = "INJECTION" if is_injection else "SAFE"
             blocked = bool(is_injection)
 
-            # Persist to disk cache
+            # Persist to disk cache tagged with live Lyzr provenance
             self._write_cache(
                 text_hash,
                 {
+                    "impl": "lyzr",
                     "decision": decision,
                     "confidence": confidence,
                     "blocked": blocked,

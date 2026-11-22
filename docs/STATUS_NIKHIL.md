@@ -21,3 +21,4 @@
 | N8 | DONE | pytest -q (73 passed), secret_scan clean | 2e1da82 | NONE | Hardening, code review, documentation complete |
 | SETUP-TUNNEL | DONE | tunnel test PASS (HTTP 200, 125 pytest) | e2cf5af | NONE | cloudflared detection in tunnel.py, tools/ in .gitignore |
 | H8-LIVE-RUN | DONE | Full live run completed (sample=False) | b055d0b | NONE | run-20261122-182325 verified: BAND + Agent37 + Lyzr + Gemini |
+| DIAGNOSIS | DONE | pytest -q (126 passed), secret_scan clean | 72e3875 | NONE | Diagnosed ASR 0/0/0 and R2 Benign 0/5; gate cache provenance fixed; worker post-restart restored; victim prompt added |

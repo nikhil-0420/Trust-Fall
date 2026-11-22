@@ -128,6 +128,11 @@ class Agent37Sandbox(Sandbox):
                     if resp.status_code == 200:
                         status = resp.json().get("status")
                         if status == "running":
+                            # Ensure worker process is relaunched post-restart
+                            try:
+                                await self.exec_command("cd /home/node && (python3 -u worker_band.py > worker.log 2>&1 &) || true")
+                            except Exception:
+                                pass
                             return
             except Exception:
                 pass

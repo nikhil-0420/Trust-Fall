@@ -49,7 +49,12 @@ class WorkerCore:
         self._screening_cache: dict[str, Any] = {}
 
     def _load_prompts(self) -> tuple[str, str]:
-        sys_path = self._prompts_dir / "worker_system.md"
+        prompt_mode = os.getenv("WORKER_PROMPT", "default").strip().lower()
+        if prompt_mode == "victim":
+            sys_path = self._prompts_dir / "worker_system_victim.md"
+        else:
+            sys_path = self._prompts_dir / "worker_system.md"
+
         task_path = self._prompts_dir / "worker_task.md"
 
         if sys_path.exists():
