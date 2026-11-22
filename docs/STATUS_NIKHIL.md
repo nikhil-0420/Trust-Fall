@@ -12,4 +12,4 @@
 | N0.8 | DONE | npm run build (vite + react + tailwind) | f707128 | N0.9 | Web skeleton with mock switch & sync script |
 | N0.9 | DONE | pytest -q (12 passed), history secret scan | 9ee5073 | N1 | Tagged scaffold-v1, ready for Nehaa |
 | N1 | DONE | pytest -q (17 passed) | a7f31e2 | N2 | WorkerCore + tools + prompts + GeminiLLM adapter (LIVE SKIPPED) |
-| N2 | DONE | pytest -q (48 passed) | pending | N3 | Policy engine, signed envelopes, gate client, fail-safe L2 |
+| N2 | DONE | pytest -q (48 passed) | 20268a1 | N3 | Policy engine, signed envelopes, gate client, fail-safe L2 |
