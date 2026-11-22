@@ -10,3 +10,4 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-22 | N6.1 | WorkerOutcome | Added optional field `memory_note_blocked: Optional[bool] = None` to record when gate screening drops a note | Yes |
 | 2026-11-22 | H2.4 | RoundResult | Added optional field `skipped_budget: Optional[int] = 0` to log attacks skipped due to budget caps | Yes |
 | 2026-11-22 | H2.4 | RoundAttackResult | Added optional field `skipped_budget: Optional[bool] = False` to identify individual attacks skipped by budget | Yes |
+| 2026-11-22 | H3.2 | PatchEntry | Added optional field `demo: Optional[bool] = False` to identify deliberately over-strict safety test patches in UI | Yes |

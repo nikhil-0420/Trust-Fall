@@ -188,9 +188,21 @@ class MockTransport(Transport):
 
         if env.kind == "benign":
             latency = int((time.perf_counter() - start_t) * 1000) + 120
+            outbound = "Support Ticket Processed: Customer issue recorded and resolved."
+            if env.profile == "L2" and self.sandbox and self.sandbox.patch:
+                tp = self.sandbox.patch.get("tool_policy", {})
+                sr = tp.get("send_report", {})
+                if sr.get("allowed") is False:
+                    outbound = "Action denied by security policy: send_report disabled."
+                else:
+                    for pat in sr.get("redact_patterns", []):
+                        try:
+                            outbound = re.sub(pat, "[REDACTED]", outbound)
+                        except Exception:
+                            pass
             return WorkerOutcome(
                 ticket_id=env.ticket_id,
-                outbound_messages=["Support Ticket Processed: Customer issue recorded and resolved."],
+                outbound_messages=[outbound],
                 blocked_by_gate=False,
                 gate=GateResult(decision="SAFE", confidence=0.02, cached=False, blocked=False),
                 memory_after=await self.sandbox.read_memory(),

@@ -1,7 +1,7 @@
 """
 arena/referee.py
 Referee orchestrating rounds, evaluations, and patch workflow.
-Owner: Nehaa (WS-C C2, C4)
+Owner: Nehaa (WS-C C2, C4, C6)
 """
 import json
 import os
@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from arena.events import EventWriter
 from arena.interfaces import BlueAgent, Gate, RedAgent, Sandbox, Transport
+from arena.reports import generate_reports
+from arena.rollback import apply_or_rollback
 from arena.rounds import execute_round
 from contracts.models import (
     Attack,
@@ -82,7 +84,7 @@ class Referee:
     ) -> Results:
         """
         Execute full R0 -> R1 -> Blue defense turn -> R2 evaluation.
-        Persists results to data/runs/<run_id>/results.json.
+        Persists results to data/runs/<run_id>/results.json and writes reports.
         """
         if not run_id:
             run_id = f"run-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
@@ -125,52 +127,22 @@ class Referee:
                     }
                 )
 
-        # 5. Blue turn: propose and install patch
-        patches_recorded: List[PatchEntry] = []
+        # 5. Blue turn: propose, test, and apply/rollback patch
+        r0_rate = (
+            (r0_res.benign.passed / r0_res.benign.total)
+            if r0_res.benign.total > 0
+            else 1.0
+        )
+        patch_decision = await apply_or_rollback(
+            referee=self,
+            incident_log=incident_log,
+            r0_benign_rate=r0_rate,
+            rollback_demo=rollback_demo,
+            previous_patch=None,
+        )
 
-        # Hook for H3 rollback demo if enabled
-        if rollback_demo:
-            try:
-                from arena.rollback import apply_or_rollback
-                patch_decision = await apply_or_rollback(
-                    self,
-                    incident_log=incident_log,
-                    r0_benign_rate=(r0_res.benign.passed / r0_res.benign.total) if r0_res.benign.total > 0 else 1.0,
-                    demo_overstrict=True,
-                )
-                active_patch = patch_decision.patch
-                patches_recorded.extend(patch_decision.history)
-                patch_version = active_patch.version if active_patch else 1
-            except ImportError:
-                pass
-
-        if not patches_recorded:
-            patch_data = await self.blue.propose_patch(
-                incident_log=incident_log,
-                previous_patch=None,
-                rejected_reason=None,
-            )
-            patch_obj = Patch.model_validate(patch_data)
-            await self.sandbox.install_patch(patch_data)
-            await self.sandbox.restart()
-            await self.sandbox.ping()
-
-            self.events.emit(
-                round_id="R1",
-                event_type="patch",
-                action="applied",
-                version=patch_obj.version,
-                summary=patch_obj.notes or "Defensive hardening rules applied",
-            )
-            patches_recorded.append(
-                PatchEntry(
-                    version=patch_obj.version,
-                    status="applied",
-                    summary=patch_obj.notes or "Defensive patch installed",
-                    patch=patch_obj,
-                )
-            )
-            patch_version = patch_obj.version
+        patches_recorded = list(patch_decision.history)
+        patch_version = patch_decision.active_version
 
         # 6. R2: Patched (L2)
         # All previously successful known attacks + ALL held-out attacks
@@ -217,5 +189,15 @@ class Referee:
         out_file = self.events.run_dir / "results.json"
         with open(out_file, "w", encoding="utf-8") as f:
             f.write(results.model_dump_json(indent=2))
+
+        # Generate markdown reports in data/reports/
+        try:
+            generate_reports(
+                results,
+                output_dir="data/reports",
+                cache_hits=self.events.cache_hits,
+            )
+        except Exception:
+            pass
 
         return results

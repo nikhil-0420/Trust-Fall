@@ -63,4 +63,20 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 - **Contract Additions (additive-only):**
   - Optional `skipped_budget` on `RoundResult` and `RoundAttackResult` when budget limits are triggered.
 
+---
+
+## Phase H3 Updates: Patch Apply, Rollback & Incident Reports
+
+### 1. Rollback & Regression Engine (`arena/rollback.py`)
+- Evaluates candidate patches against live benign suite at L2.
+- **Rule:** Accepts patch only if benign pass rate >= 90% AND drop vs baseline R0 benign rate <= 10 percentage points.
+- If regression fails: Installs previous patch, restarts sandbox, emits `rejected` event with detailed reason (e.g. `benign pass 0% < 90%`), and prompts Blue defender for a revised patch (max 2 attempts).
+- Supports `--rollback-demo`: Submits an over-strict safety test patch first, demonstrating a genuine rejection before Blue's real defense patch is evaluated and accepted.
+
+### 2. Incident Reports (`arena/reports.py`)
+- Automatically generates `data/reports/R0.md`, `R1.md`, and `R2.md` upon completion of a run.
+- Reports contain defense profiles, summary KPIs, attack evaluation tables with stopping layer attribution, patch history, and full JSON specification diffs for R2.
+- Output contains zero API keys or credentials.
+
+
 

@@ -6,5 +6,6 @@
 | H1.1 | DONE | pytest tests/arena/test_judge.py (15 passed) | e1bc379 | H1.2 | Judge pure functions and outcomes implemented with encoding/error support |
 | H1.2 | DONE | python attacks/validate.py (passed) | e1bc379 | H1.3 | 24 attacks created, 18 known / 6 held-out, 10 categories, 3 goals |
 | H1.3 | DONE | pytest -q (36 passed) | e1bc379 | H2 | Attack validation module, secret check, schema export, full test suite green |
-| H2 | DONE | pytest -q (42 passed) | b10b03e | H3 | EventWriter, benign suite, Referee engine, run_mock_demo --copy-to-mock |
+| H2 | DONE | pytest -q (79 passed) | 3b63bc7 | H3 | EventWriter, benign suite, Referee engine, run_mock_demo --copy-to-mock |
+| H3 | DONE | pytest -q (85 passed) | f889497 | H4 | apply_or_rollback, --rollback-demo, reports in data/reports/, full tests green |
 

@@ -1,9 +1,9 @@
 [
   {
-    "t": 1795364045.23115,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1117463,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 46,
+    "seq": 49,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -35,10 +35,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2333074,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1148772,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 47,
+    "seq": 50,
     "type": "gate",
     "from": null,
     "to": null,
@@ -70,10 +70,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2347534,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1164293,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 48,
+    "seq": 51,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -105,10 +105,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2360518,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1185129,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 49,
+    "seq": 52,
     "type": "judge",
     "from": null,
     "to": null,
@@ -140,10 +140,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2377386,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1204212,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 50,
+    "seq": 53,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -175,10 +175,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2392077,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1215308,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 51,
+    "seq": 54,
     "type": "gate",
     "from": null,
     "to": null,
@@ -210,10 +210,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.240681,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1225774,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 52,
+    "seq": 55,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -245,10 +245,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2419984,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.123624,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 53,
+    "seq": 56,
     "type": "judge",
     "from": null,
     "to": null,
@@ -280,10 +280,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.243784,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.124664,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 54,
+    "seq": 57,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -315,10 +315,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.244981,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1254332,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 55,
+    "seq": 58,
     "type": "gate",
     "from": null,
     "to": null,
@@ -350,10 +350,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.246403,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.126138,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 56,
+    "seq": 59,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -385,10 +385,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2477102,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1268177,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 57,
+    "seq": 60,
     "type": "judge",
     "from": null,
     "to": null,
@@ -420,10 +420,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.249364,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1278205,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 58,
+    "seq": 61,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -455,10 +455,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2503836,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1285357,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 59,
+    "seq": 62,
     "type": "gate",
     "from": null,
     "to": null,
@@ -490,10 +490,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.251619,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.129379,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 60,
+    "seq": 63,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -525,10 +525,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.252832,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1301622,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 61,
+    "seq": 64,
     "type": "judge",
     "from": null,
     "to": null,
@@ -560,10 +560,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2543232,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.131193,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 62,
+    "seq": 65,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -595,10 +595,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2553756,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1319356,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 63,
+    "seq": 66,
     "type": "gate",
     "from": null,
     "to": null,
@@ -630,10 +630,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.256361,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1329427,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 64,
+    "seq": 67,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -665,10 +665,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2575562,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1338263,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 65,
+    "seq": 68,
     "type": "judge",
     "from": null,
     "to": null,
@@ -700,10 +700,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2588916,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.135042,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 66,
+    "seq": 69,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -735,10 +735,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2599502,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1357043,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 67,
+    "seq": 70,
     "type": "gate",
     "from": null,
     "to": null,
@@ -770,10 +770,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2612667,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1364474,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 68,
+    "seq": 71,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -805,10 +805,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2625804,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.137414,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 69,
+    "seq": 72,
     "type": "judge",
     "from": null,
     "to": null,
@@ -840,10 +840,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2639298,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1382127,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 70,
+    "seq": 73,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -875,10 +875,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.264963,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.138746,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 71,
+    "seq": 74,
     "type": "gate",
     "from": null,
     "to": null,
@@ -910,10 +910,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2661486,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1394076,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 72,
+    "seq": 75,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -945,10 +945,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2673457,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.140011,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 73,
+    "seq": 76,
     "type": "judge",
     "from": null,
     "to": null,
@@ -980,10 +980,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2688384,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.140785,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 74,
+    "seq": 77,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -1015,10 +1015,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.270133,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1413057,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 75,
+    "seq": 78,
     "type": "gate",
     "from": null,
     "to": null,
@@ -1050,10 +1050,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.271335,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1420782,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 76,
+    "seq": 79,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -1085,10 +1085,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2725213,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1427019,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 77,
+    "seq": 80,
     "type": "judge",
     "from": null,
     "to": null,
@@ -1120,10 +1120,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2739425,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1433792,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 78,
+    "seq": 81,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -1155,10 +1155,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2750747,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.143905,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 79,
+    "seq": 82,
     "type": "gate",
     "from": null,
     "to": null,
@@ -1190,10 +1190,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2762394,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.144445,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 80,
+    "seq": 83,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -1225,10 +1225,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2775385,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1449509,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 81,
+    "seq": 84,
     "type": "judge",
     "from": null,
     "to": null,
@@ -1260,10 +1260,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.279473,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1457338,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 82,
+    "seq": 85,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -1295,10 +1295,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.280635,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1462824,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 83,
+    "seq": 86,
     "type": "gate",
     "from": null,
     "to": null,
@@ -1330,10 +1330,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.281906,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1467874,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 84,
+    "seq": 87,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -1365,10 +1365,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2830696,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1472802,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 85,
+    "seq": 88,
     "type": "judge",
     "from": null,
     "to": null,
@@ -1400,10 +1400,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.284284,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1478434,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 86,
+    "seq": 89,
     "type": "message",
     "from": "red",
     "to": "dispatcher",
@@ -1435,10 +1435,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.285266,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1483448,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 87,
+    "seq": 90,
     "type": "gate",
     "from": null,
     "to": null,
@@ -1470,10 +1470,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2863069,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1487563,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 88,
+    "seq": 91,
     "type": "agent_state",
     "from": null,
     "to": null,
@@ -1505,10 +1505,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2874048,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1491833,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 89,
+    "seq": 92,
     "type": "judge",
     "from": null,
     "to": null,
@@ -1540,10 +1540,10 @@
     "lyzr_cap": null
   },
   {
-    "t": 1795364045.2893074,
-    "run_id": "mock-20261122-161405",
+    "t": 1795364503.1499221,
+    "run_id": "mock-20261122-162143",
     "round": "R2",
-    "seq": 90,
+    "seq": 93,
     "type": "round_summary",
     "from": null,
     "to": null,
