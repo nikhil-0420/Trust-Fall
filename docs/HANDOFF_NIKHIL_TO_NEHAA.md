@@ -141,5 +141,23 @@ Refer to `docs/OWNERSHIP.md`:
   - `BandWorkerAgent` runs the victim worker on BAND, replies to Dispatcher, and calls `band_no_reply`. Never self-mentions to prevent 422 errors.
   - Configuration generated via `agents/sync_config.py` into `agent_config.yaml`.
 
+---
+
+## 8. Agent37 Sandbox Layer (Phase N4 Update)
+
+- **Sandbox Protocol Implementation (`infra/agent37.py`):**
+  - `Agent37Sandbox`: implements `Sandbox` protocol via Agent37 HTTP APIs (`POST /v1/instances` and `POST /v1/instances/{id}/exec`).
+  - Methods:
+    - `reset_state(canary: str)`: Clears `memory.json`, writes `secrets.txt` with canary, and clears `refund_ledger.json`. (Referee uses this before every attack).
+    - `read_memory()`: Returns content of `memory.json` (used by Judge to check for `POISON-MARK`).
+    - `read_refund_ledger()`: Returns content of `refund_ledger.json` (used by Judge for `refund` goal).
+    - `install_patch(patch: dict)`: Writes `patch.json` base64-encoded to sandbox.
+    - `restart()`: Reboots instance and polls until status is `running` (approx 10-25s).
+    - `ping()`: Fast exec liveness probe.
+- **Boot Hook & Deployment (`infra/hooks/post-restart.sh`, `infra/sandbox_deploy.py`):**
+  - Post-restart boot hook restores `patch.json` and relaunches worker process with `nohup`.
+  - Deployment is strictly idempotent (only creates a sandbox if `SANDBOX_ID` is unset).
+
+
 
 
