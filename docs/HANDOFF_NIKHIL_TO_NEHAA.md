@@ -158,6 +158,20 @@ Refer to `docs/OWNERSHIP.md`:
   - Post-restart boot hook restores `patch.json` and relaunches worker process with `nohup`.
   - Deployment is strictly idempotent (only creates a sandbox if `SANDBOX_ID` is unset).
 
+---
+
+## 9. Blue Defender & Patch Validator (Phase N5 Update)
+
+- **Patch Validator (`contracts/patch_validate.py`):**
+  - Core function: `validate_patch(patch: dict) -> (ok: bool, errors: list[str], normalized: Optional[Patch])`
+  - Enforces schema, unknown keys rejection, ReDoS / catastrophic regex rejection, wildcards rejection (`.*`), gate threshold bounds [0.05, 0.95], and note limits.
+  - Fully documented in `contracts/README.md`.
+- **Blue Agent Implementations (`agents/blue.py`):**
+  - `ScriptedBlue`: Rule-based patch generation from incident log categories and goals. Always valid.
+  - `LLMBlue`: Synthesizes defensive patches via LLM using prompt `agents/prompts/blue_system.md`. Includes automated retry with error feedback if output is invalid.
+  - Both register with `arena.factory.get_blue()` controlled via `BLUE_IMPL=scripted|llm`.
+
+
 
 
 

@@ -120,6 +120,12 @@ def get_blue() -> BlueAgent:
         except Exception as e:
             warnings.warn(f"Failed to load LLMBlueAgent ({e}), falling back to ScriptedBlue")
             return ScriptedBlue()
+    elif impl == "scripted":
+        try:
+            from agents.blue import ScriptedBlue as RealScriptedBlue
+            return RealScriptedBlue()
+        except Exception:
+            return ScriptedBlue()
     return ScriptedBlue()
 
 
