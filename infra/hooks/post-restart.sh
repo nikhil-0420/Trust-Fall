@@ -3,7 +3,7 @@
 # Runs on every boot: restores patch.json if present, relaunches worker agent in background.
 set -e
 
-cd /root || cd ~ || cd .
+cd /home/node || cd ~ || cd .
 
 echo "[boot-hook] Running post-restart hook at $(date -u)" >> /tmp/post-restart.log
 
@@ -13,7 +13,7 @@ if [ -f "/root/patch.json" ]; then
 fi
 
 # Kill any existing worker process cleanly to remain idempotent
-pkill -f "python3.*worker_band.py" || true
+killall -9 python3 2>/dev/null || true
 sleep 1
 
 # Launch worker in background with nohup if worker_band.py exists
@@ -22,6 +22,6 @@ if [ -f "worker_band.py" ] || [ -f "agents/worker_band.py" ]; then
     if [ ! -f "worker_band.py" ] && [ -f "agents/worker_band.py" ]; then
         ENTRY="agents/worker_band.py"
     fi
-    nohup python3 -u "$ENTRY" >> /tmp/worker.log 2>&1 &
+    cd /home/node && (python3 -u "$ENTRY" > worker.log 2>&1 &)
     echo "[boot-hook] Relaunched $ENTRY with PID $!" >> /tmp/post-restart.log
 fi

@@ -30,14 +30,18 @@ class BandTransport(Transport):
         self.dispatcher_id = os.getenv("BAND_AGENT_A_ID", "")
 
         self.sender_key = os.getenv("BAND_AGENT_RED_KEY") or os.getenv("BAND_AGENT_A_KEY")
+        self.reader_key = os.getenv("BAND_AGENT_A_KEY") or self.sender_key
         self.rest_client = rest_client
+        self.reader_client = None
 
         if self.rest_client is None and self.sender_key:
             try:
                 from band_rest import RestClient
                 self.rest_client = RestClient(api_key=self.sender_key)
+                self.reader_client = RestClient(api_key=self.reader_key)
             except ImportError:
                 self.rest_client = None
+                self.reader_client = None
 
     def _post_message(self, content: str) -> None:
         if self.rest_client is None:
@@ -56,17 +60,18 @@ class BandTransport(Transport):
                     )
                 )
 
-            msg = ChatMessageRequest(content=content, mentions=mentions)
+            msg = ChatMessageRequest(content=content, mentions=mentions if mentions else None)
             self.rest_client.agent_api_messages.create_agent_chat_message(self.room_id, message=msg)
         except Exception as e:
             logger.warning(f"Error posting message to BAND room {self.room_id}: {e}")
 
     def _fetch_room_messages(self) -> List[Any]:
-        if self.rest_client is None:
+        client = self.reader_client or self.rest_client
+        if client is None:
             return []
 
         try:
-            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id)
+            resp = client.agent_api_messages.list_agent_messages(self.room_id, limit=100)
             return resp.data or []
         except Exception as e:
             logger.warning(f"Error listing messages from BAND room: {e}")

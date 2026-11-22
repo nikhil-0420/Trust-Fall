@@ -23,7 +23,8 @@ from contracts.models import Attack, Results
 
 
 @pytest.fixture
-def test_env(tmp_path):
+def test_env(tmp_path, monkeypatch):
+    monkeypatch.setenv("USE_MOCKS", "1")
     sandbox = FakeSandbox()
     gate = MockGate()
     transport = MockTransport(sandbox=sandbox, gate=gate)

@@ -197,3 +197,31 @@ Refer to `docs/OWNERSHIP.md`:
 
 
 
+
+
+---
+
+## 11. Live Integration Check (Phase N7 Update)
+
+The live backend integration has been fully verified on live BAND rooms and Agent37 sandboxes:
+
+- **Verified Working Flags:**
+  - `TRANSPORT=band`
+  - `SANDBOX_IMPL=agent37` (Configured via `SANDBOX_ID` in `.env`)
+  - `LLM_IMPL=gemini` (Model: `gemini-3.5-flash-lite`)
+  - `BLUE_IMPL=scripted`
+- **BAND Transport & Room Details:**
+  - Active Room ID: `2259e40a-1833-49f4-b647-596ac09f99ea`
+  - Registered & verified agents in room: Agent Red, Agent Blue, Agent Analyst, Agent A (Dispatcher), Agent B (Worker).
+  - **Important constraint:** BAND `ChatMessageRequest` enforces `minItems: 1` on `mentions`. Every posted message must contain at least one mention item.
+  - **Pagination rule:** Always pass `limit=100` to `list_agent_messages` so recent messages are not hidden by the default 20-item cap.
+- **Agent37 Sandbox & Persistence:**
+  - Sandbox runtime: user `node` in `/home/node`.
+  - Persistence verified: `memory.json` notes and `patch.json` survive reboot.
+  - Post-restart hook: `/home/node/.agent37/hooks/post-restart.sh` successfully relaunches worker process after reboot.
+- **Observed Latencies & Rate Limits:**
+  - End-to-end round trip latency: **~1.98s** per ticket (Dispatcher evaluation + Sandbox Worker tool execution + Gemini LLM synthesis + BAND messaging).
+  - Recommended Referee timeout per ticket: **15.0s** (provides ample margin over the ~2s baseline).
+  - Recommended inter-ticket pacing: **1.0s** between tickets to avoid room rate-limiting.
+- **Live Check Report:**
+  - Detailed findings, evidence, and call counts are available in `docs/LIVE_CHECK_NIKHIL.md`.

@@ -6,7 +6,10 @@ and launches worker in background.
 """
 import base64
 import os
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import httpx
 from dotenv import load_dotenv
@@ -50,7 +53,7 @@ def ensure_sandbox_instance(api_key: str) -> str:
     manual_path = Path("docs/MANUAL_STEPS_NIKHIL.md")
     if manual_path.exists():
         with open(manual_path, "a", encoding="utf-8") as f:
-            f.write(f"\n- Created Agent37 instance `{new_id}`. Remember to delete it after submission: DELETE https://api.agent37.com/v1/instances/{new_id}\n")
+            f.write("\n- Created Agent37 instance. Remember to delete it after submission: DELETE https://api.agent37.com/v1/instances/$SANDBOX_ID\n")
 
     return new_id
 
@@ -80,7 +83,7 @@ def deploy_worker() -> str:
     with httpx.Client(timeout=120.0) as client:
         # 1. Install dependencies
         print("Installing python dependencies inside sandbox...")
-        deps_cmd = "pip3 install --quiet 'band-sdk[langgraph]' langchain langchain-google-genai langgraph google-genai"
+        deps_cmd = "pip3 install --quiet 'band-sdk[langgraph]' pydantic pyyaml python-dotenv google-genai httpx"
         r_deps = client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
@@ -95,12 +98,21 @@ def deploy_worker() -> str:
             (root / "agents" / "tools.py", "agents/tools.py"),
             (root / "agents" / "policy.py", "agents/policy.py"),
             (root / "agents" / "envelope.py", "agents/envelope.py"),
+            (root / "agents" / "llm_gemini.py", "agents/llm_gemini.py"),
             (root / "agents" / "worker_band.py", "agents/worker_band.py"),
             (root / "agents" / "worker_band.py", "worker_band.py"),
             (root / "agents" / "sync_config.py", "agents/sync_config.py"),
             (root / "agents" / "__init__.py", "agents/__init__.py"),
             (root / "agents" / "prompts" / "worker_system.md", "agents/prompts/worker_system.md"),
             (root / "agents" / "prompts" / "worker_task.md", "agents/prompts/worker_task.md"),
+            (root / "contracts" / "models.py", "contracts/models.py"),
+            (root / "contracts" / "patch_validate.py", "contracts/patch_validate.py"),
+            (root / "contracts" / "__init__.py", "contracts/__init__.py"),
+            (root / "arena" / "interfaces.py", "arena/interfaces.py"),
+            (root / "arena" / "factory.py", "arena/factory.py"),
+            (root / "arena" / "mocks.py", "arena/mocks.py"),
+            (root / "arena" / "__init__.py", "arena/__init__.py"),
+            (root / ".env", ".env"),
         ]
 
         # Generate config
@@ -109,7 +121,7 @@ def deploy_worker() -> str:
 
         # Upload boot hook
         hook_path = root / "infra" / "hooks" / "post-restart.sh"
-        files_to_upload.append((hook_path, "/root/.agent37/hooks/post-restart.sh"))
+        files_to_upload.append((hook_path, "/home/node/.agent37/hooks/post-restart.sh"))
 
         for local_p, remote_p in files_to_upload:
             if local_p.exists():
@@ -119,11 +131,16 @@ def deploy_worker() -> str:
         client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": "chmod +x /root/.agent37/hooks/post-restart.sh || true"},
+            json={"command": "chmod +x /home/node/.agent37/hooks/post-restart.sh || true"},
         )
 
-        # 3. Start worker process with nohup
-        start_cmd = "pkill -f 'python3.*worker_band.py' || true; sleep 1; nohup python3 -u worker_band.py > /tmp/worker.log 2>&1 & sleep 2; ps aux | grep worker_band"
+        # 3. Start worker process
+        client.post(
+            f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
+            headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
+            json={"command": "killall -9 python3 2>/dev/null || true"},
+        )
+        start_cmd = "cd /home/node && (python3 -u worker_band.py > worker.log 2>&1 &) && sleep 1; ps aux | grep python"
         r_start = client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},

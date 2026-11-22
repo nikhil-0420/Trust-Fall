@@ -36,3 +36,5 @@ After hackathon submission and judging:
    - Set repository tags/topics: `multi-agent-systems`, `ai-security`, `red-teaming`, `prompt-injection`, `band-ai`, `agent37`, `lyzr`.
 
 
+
+- Created Agent37 instance. Remember to delete it after submission: DELETE https://api.agent37.com/v1/instances/$SANDBOX_ID

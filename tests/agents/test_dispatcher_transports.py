@@ -36,12 +36,16 @@ class FakeAgentApiMessages:
         self.messages.append(FakeRestMessage(content=content))
         return self
 
-    def list_agent_messages(self, room_id: str) -> Any:
+    def list_agent_messages(self, room_id: str, **kwargs) -> Any:
+        limit = kwargs.get("limit")
+        msgs = list(self.messages)
+        if limit is not None:
+            msgs = msgs[:limit]
         class Resp:
             def __init__(self, msgs: list[FakeRestMessage]):
                 self.data = msgs
 
-        return Resp(list(self.messages))
+        return Resp(msgs)
 
 
 class FakeRestClient:
