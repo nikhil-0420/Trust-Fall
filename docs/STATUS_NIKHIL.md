@@ -7,6 +7,7 @@
 | N0.3 | DONE | test_schemas (pytest -q) | 2b36a3e | N0.4 | Contracts + Pydantic models + JSON Schemas |
 | N0.4 | DONE | factory & interfaces load test | 2b36a3e | N0.5 | Protocols & factory with lazy fallback |
 | N0.5 | DONE | test_schemas (6 passed), mock generation | 2b36a3e | N0.6 | Mock implementations + datasets |
-| N0.6 | DONE | 12 tests passed (placeholder + contracts) | pending | N0.7 | Stubs across agents, arena, api, infra |
-| N0.7 | DONE | doc review | pending | N0.8 | README with architecture diagram & quick start |
-| N0.8 | DONE | npm run build (vite + react + tailwind) | pending | N0.9 | Web skeleton with mock switch & sync script |
+| N0.6 | DONE | 12 tests passed (placeholder + contracts) | f707128 | N0.7 | Stubs across agents, arena, api, infra |
+| N0.7 | DONE | doc review | f707128 | N0.8 | README with architecture diagram & quick start |
+| N0.8 | DONE | npm run build (vite + react + tailwind) | f707128 | N0.9 | Web skeleton with mock switch & sync script |
+| N0.9 | DONE | pytest -q (12 passed), history secret scan | pending | N1 | Tagged scaffold-v1, ready for Nehaa |
