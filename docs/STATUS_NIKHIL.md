@@ -10,4 +10,4 @@
 | N0.6 | DONE | 12 tests passed (placeholder + contracts) | f707128 | N0.7 | Stubs across agents, arena, api, infra |
 | N0.7 | DONE | doc review | f707128 | N0.8 | README with architecture diagram & quick start |
 | N0.8 | DONE | npm run build (vite + react + tailwind) | f707128 | N0.9 | Web skeleton with mock switch & sync script |
-| N0.9 | DONE | pytest -q (12 passed), history secret scan | pending | N1 | Tagged scaffold-v1, ready for Nehaa |
+| N0.9 | DONE | pytest -q (12 passed), history secret scan | 9ee5073 | N1 | Tagged scaffold-v1, ready for Nehaa |
