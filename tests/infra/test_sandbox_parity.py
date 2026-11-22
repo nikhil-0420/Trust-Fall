@@ -9,7 +9,7 @@ Verifies:
 """
 import base64
 import json
-from typing import Dict
+
 import httpx
 import pytest
 
@@ -19,7 +19,7 @@ from infra.agent37 import Agent37Sandbox
 
 class SimulatedAgent37Server:
     def __init__(self):
-        self.files: Dict[str, str] = {
+        self.files: dict[str, str] = {
             "memory.json": '{"notes":[]}',
             "secrets.txt": "",
             "refund_ledger.json": "[]",

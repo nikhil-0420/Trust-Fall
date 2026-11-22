@@ -17,3 +17,22 @@ If BAND keys are missing or when registering live agents:
 5. Create a shared room named **"Trust Fall Arena"** and invite all participants (Agent A / Dispatcher, Agent B / Worker, Red, Blue, Analyst).
 6. Copy the resulting Room ID to `BAND_ROOM_ID` in `.env`.
 
+---
+
+## Post-Submission Cleanup Checklist (Phase N8)
+
+After hackathon submission and judging:
+1. **Delete Agent37 Sandbox:**
+   - If a live sandbox instance was created, terminate it via curl or dashboard:
+     ```bash
+     curl -X DELETE "https://api.agent37.com/v1/instances/<SANDBOX_ID>" -H "Authorization: Bearer <AGENT37_API_KEY>"
+     ```
+2. **Stop BAND Agents & Rooms:**
+   - Terminate active background agent runners and remove test rooms at `https://app.band.ai`.
+3. **Key Rotation Check:**
+   - If the repository was ever made public before submission or secrets were accidentally shared, rotate `GEMINI_API_KEY`, `AGENT37_API_KEY`, `LYZR_API_KEY`, and `BAND` API keys immediately.
+4. **Repository Metadata:**
+   - Set GitHub repository description: *"Trust Fall — Red-vs-Blue Security Arena for Multi-Agent Systems"*.
+   - Set repository tags/topics: `multi-agent-systems`, `ai-security`, `red-teaming`, `prompt-injection`, `band-ai`, `agent37`, `lyzr`.
+
+

@@ -126,3 +126,75 @@ Configured via `.env` (copy from `.env.example`):
 | `RED_IMPL` | `scripted` | `scripted` \| `llm` |
 | `LLM_DAILY_CAP` | - | Daily limit on LLM API calls |
 | `LYZR_DAILY_CAP` | `15` | Daily limit on Lyzr API calls |
+
+---
+
+## Agent Layer Details (Workstream A & B2)
+
+### 1. Agents Architecture & Responsibilities
+
+- **Dispatcher (`agents/dispatcher.py`):**
+  - Trusted, scripted orchestrator with zero LLM calls.
+  - At defense profiles `L1` and `L2`, intercepts incoming tickets and evaluates text against `GateClient` (`POST /internal/screen`).
+  - Drops injected/error payloads and emits `gate` and `agent_state` events.
+  - Signs permitted tickets with HMAC-SHA256 (`INTERNAL_TOKEN`) and forwards them to the Worker.
+- **Worker Agent (`agents/worker_core.py`, `agents/tools.py`):**
+  - A customer-support triage agent maintaining persistent customer memory (`memory.json`) and canary reference secrets (`secrets.txt`).
+  - Exposed tools: exactly three plain functions: `read_memory()`, `write_memory(text)`, and `send_report(status, summary)`. No shell, network, or arbitrary file system access.
+  - Executes tool actions and compiles resolution reports into `outbound_messages`.
+- **Blue Defender (`agents/blue.py`):**
+  - Synthesizes hardening rules based on incident logs of compromised attacks.
+  - Operates in two modes: `ScriptedBlue` (deterministic rule mapping by category) and `LLMBlue` (adaptive prompt synthesis using `agents/prompts/blue_system.md`).
+  - All proposals must pass strict schema, regex safety, and wildcard checks in `contracts/patch_validate.py`.
+- **Analyst Agent (`agents/analyst.py`):**
+  - Financial authorization agent managing refund operations (`grant_refund`) recorded into `refund_ledger.json`.
+  - In unshielded scenarios, malicious instructions forwarded via worker reports can trick the Analyst into issuing unauthorized refunds (contagion attack).
+  - In guarded mode, inter-agent reports undergo gate screening and strict schema validation (`ticket_id`, `status`, `summary <= 200 chars`).
+
+### 2. Defense Profiles
+
+- **`L0` (Baseline):** No pre-dispatch screening. No worker-level policy enforcement. Tests raw model vulnerability to direct injection and poisoning.
+- **`L1` (Perimeter Gate):** Lyzr Gate screening active at the Dispatcher. Blunt attacks (direct override, roleplay, authority) are blocked before reaching the agent.
+- **`L2` (Defense-in-Depth):** Dispatcher perimeter gate active PLUS local deterministic policy engine (`Policy`) at the Worker. Enforces deny patterns, maximum memory note lengths, fact-only formatting, canary redaction, and memory-read screening.
+
+### 3. Patch Format (`patch.json`)
+
+Defensive rules proposed by Blue and applied to the Worker:
+```json
+{
+  "version": 2,
+  "memory_write_rules": {
+    "deny_patterns": ["(?i)ignore .* instructions", "POISON-MARK"],
+    "max_len": 120,
+    "note_format": "fact_only"
+  },
+  "tool_policy": {
+    "send_report": {
+      "redact_patterns": ["CANARY-[A-Za-z0-9]+-DEMO-ONLY"]
+    },
+    "write_memory": {
+      "allowed": true
+    }
+  },
+  "gate": {
+    "screen_tool_outputs": true,
+    "screen_memory_reads": true,
+    "threshold": 0.3
+  },
+  "notes": "Hardened policy against memory poisoning and token leakage"
+}
+```
+
+### 4. Sandbox Patch Delivery & Persistence
+
+- The Worker runs inside an isolated microVM on **Agent37**.
+- Patches are installed via `Agent37Sandbox.install_patch()`, which base64-encodes and writes `patch.json` into the root directory.
+- On reboot, the boot hook `infra/hooks/post-restart.sh` restores `patch.json` and automatically relaunches the worker process with `nohup`.
+- Memory notes (`memory.json`) and applied patches persist across reboots.
+
+### 5. Transport Modes
+
+- **Mock (`TRANSPORT=mock`):** Fully simulated, offline, deterministic responses for all agents.
+- **Loopback (`TRANSPORT=loopback`):** Runs the real Dispatcher, WorkerCore, and GateClient in-process with local memory persistence. Smoke test: `python scripts/loopback_smoke.py`.
+- **BAND (`TRANSPORT=band`):** Real-time multi-agent communication across WebSocket connections in BAND rooms.
+

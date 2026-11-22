@@ -11,8 +11,8 @@ Covers:
 import base64
 import json
 from pathlib import Path
+
 import pytest
-import httpx
 
 from agents.envelope import get_or_create_internal_token, sign_envelope, verify_envelope
 from agents.gate_client import GateClient
@@ -20,7 +20,6 @@ from agents.policy import Policy, safe_regex_search
 from agents.worker_core import WorkerCore
 from arena.interfaces import Envelope
 from arena.mocks import MockLLM
-from contracts.models import Patch
 
 
 @pytest.fixture

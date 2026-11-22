@@ -4,8 +4,10 @@ Verifies normal ticket processing, memory persistence across tickets, outbound m
 JSON fallback handling, llm_calls tracking, and canary placement.
 """
 import json
-import pytest
 from pathlib import Path
+
+import pytest
+
 from agents.worker_core import WorkerCore
 from arena.interfaces import Envelope
 from arena.mocks import MockLLM

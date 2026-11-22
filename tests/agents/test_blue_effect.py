@@ -7,6 +7,7 @@ Verifies:
 """
 import json
 from pathlib import Path
+
 import pytest
 
 from agents.blue import ScriptedBlue

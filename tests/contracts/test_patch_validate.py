@@ -9,6 +9,7 @@ Verifies acceptance of good patches and rejection of:
 - max_len out of range
 """
 import pytest
+
 from contracts.patch_validate import validate_patch
 
 

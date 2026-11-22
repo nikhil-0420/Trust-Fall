@@ -10,6 +10,7 @@ Verifies:
 """
 import json
 from pathlib import Path
+
 import pytest
 
 from agents.analyst import AnalystCore, run_contagion_case

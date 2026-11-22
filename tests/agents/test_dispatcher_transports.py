@@ -8,15 +8,14 @@ Verifies:
 - BAND transport unit-tests parsing and timeout logic against fake REST client
 """
 from pathlib import Path
-from typing import Any, List
+from typing import Any
+
 import pytest
 
 from agents.dispatcher import Dispatcher
-from agents.envelope import sign_envelope
 from agents.policy import Policy
-from agents.worker_band import BandWorkerAgent
 from agents.worker_core import WorkerCore
-from arena.interfaces import Envelope, GateResult, WorkerOutcome
+from arena.interfaces import Envelope
 from arena.mocks import FakeSandbox, MockGate, MockLLM
 from arena.transport_band import BandTransport
 from arena.transport_loopback import LoopbackTransport
@@ -30,7 +29,7 @@ class FakeRestMessage:
 
 class FakeAgentApiMessages:
     def __init__(self):
-        self.messages: List[FakeRestMessage] = []
+        self.messages: list[FakeRestMessage] = []
 
     def create_agent_chat_message(self, room_id: str, message: Any) -> Any:
         content = getattr(message, "content", str(message))
@@ -39,7 +38,7 @@ class FakeAgentApiMessages:
 
     def list_agent_messages(self, room_id: str) -> Any:
         class Resp:
-            def __init__(self, msgs: List[FakeRestMessage]):
+            def __init__(self, msgs: list[FakeRestMessage]):
                 self.data = msgs
 
         return Resp(list(self.messages))
@@ -84,7 +83,7 @@ async def test_loopback_l1_blunt_injection_never_reaches_worker(fake_state_dir: 
     mock_llm = MockLLM()
     worker = WorkerCore(llm=mock_llm, state_dir=fake_state_dir)
     gate = MockGate()
-    events: List[Event] = []
+    events: list[Event] = []
     dispatcher = Dispatcher(gate=gate, worker=worker, event_sink=events.append)
     transport = LoopbackTransport(dispatcher=dispatcher, worker=worker, state_dir=fake_state_dir)
 
