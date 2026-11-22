@@ -8,5 +8,6 @@
 | H1.3 | DONE | pytest -q (36 passed) | e1bc379 | H2 | Attack validation module, secret check, schema export, full test suite green |
 | H2 | DONE | pytest -q (79 passed) | 3b63bc7 | H3 | EventWriter, benign suite, Referee engine, run_mock_demo --copy-to-mock |
 | H3 | DONE | pytest -q (85 passed) | 492c91e | H4 | apply_or_rollback, --rollback-demo, reports in data/reports/, full tests green |
-| H4 | DONE | pytest -q (91 passed) | f410e89 | H5 | FastAPI app, /internal/screen, LyzrGate, Budget governor, RateLimiter, LIVE SKIPPED |
+| H4 | DONE | pytest -q (91 passed) | f363652 | H5 | FastAPI app, /internal/screen, LyzrGate, Budget governor, RateLimiter, LIVE SKIPPED |
+| H5 | DONE | pytest -q (97 passed) | bdfb075 | H6 | Challenge mode POST /api/break, SSE streaming, presets, SQLite leaderboard, api_smoke extended |
 

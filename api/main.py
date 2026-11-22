@@ -1,21 +1,32 @@
 """
 api/main.py
-FastAPI application for Trust Fall arena, internal gate service, and reporting.
-Owner: Nehaa (WS-D D2, D3)
+FastAPI application for Trust Fall arena, challenge mode, SSE streaming,
+gate service, presets, and leaderboard.
+Owner: Nehaa (WS-D D2, D3, D5, D6, D8)
 """
+import asyncio
 import glob
 import hmac
 import json
 import os
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from fastapi import FastAPI, Header, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from api.budget import get_budget
+from api.challenge import (
+    delete_leaderboard_entry,
+    get_challenge_manager,
+    get_leaderboard_data,
+    load_presets,
+)
 from api.gate import LyzrGate
+from api.limits import get_rate_limiter
+from api.sse import stream_attempt_events
 from arena.factory import get_sandbox, get_transport
 
 app = FastAPI(
@@ -63,7 +74,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 # ------------------------------------------------------------------------------
-# Schemas
+# Request & Response Models
 # ------------------------------------------------------------------------------
 class ScreenRequest(BaseModel):
     text: str = Field(..., max_length=500)
@@ -74,6 +85,16 @@ class ScreenResponse(BaseModel):
     decision: str
     confidence: float
     cached: bool
+
+
+class BreakRequest(BaseModel):
+    level: Literal["L0", "L1", "L2"]
+    goal: Literal["leak", "poison", "refund"]
+    text: str
+    nickname: Optional[str] = None
+    share: Optional[bool] = False
+    preset_id: Optional[str] = None
+    website: Optional[str] = None  # Honeypot field
 
 
 # ------------------------------------------------------------------------------
@@ -95,16 +116,27 @@ async def get_status() -> Dict[str, Any]:
     except Exception:
         worker_healthy = False
 
-    mode = "live" if (not use_mocks and worker_healthy) else "replay"
-    worker_status = "up" if worker_healthy else "down"
-
     budget = get_budget()
     b_status = budget.status()
+
+    # Budget exhaustion triggers replay mode
+    budget_exhausted = (
+        b_status["llm_used"] >= int(b_status["llm_cap"] * 0.8)
+        and b_status["lyzr_used"] >= int(b_status["lyzr_cap"] * 0.8)
+    )
+
+    if use_mocks or not worker_healthy or budget_exhausted:
+        mode = "replay"
+    else:
+        mode = "live"
+
+    worker_status = "up" if worker_healthy else "down"
+    challenge_mgr = get_challenge_manager()
 
     return {
         "mode": mode,
         "worker": worker_status,
-        "queue_depth": 0,
+        "queue_depth": challenge_mgr.get_queue_depth(),
         "levels": {
             "L0": "Baseline",
             "L1": "Lyzr gate",
@@ -183,19 +215,186 @@ async def get_report(round_id: str):
     return Response(content=content, media_type="text/markdown")
 
 
+# ------------------------------------------------------------------------------
+# Presets & Leaderboard
+# ------------------------------------------------------------------------------
+@app.get("/api/attacks/presets")
+async def get_presets() -> List[Dict[str, Any]]:
+    return load_presets()
+
+
 @app.get("/api/leaderboard")
 async def get_leaderboard() -> Dict[str, Any]:
-    lb_file = Path("data/mock/leaderboard.json")
-    if lb_file.exists():
-        with open(lb_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+    return get_leaderboard_data()
 
-    return {
-        "total_attempts": 0,
-        "successful_breaks": 0,
-        "break_rate": 0.0,
-        "entries": [],
-    }
+
+@app.delete("/api/admin/leaderboard/{entry_id}")
+async def admin_delete_leaderboard(
+    entry_id: str,
+    x_internal_token: Optional[str] = Header(None, alias="X-Internal-Token"),
+):
+    expected_token = os.getenv("INTERNAL_TOKEN", "").strip()
+    if not expected_token or not x_internal_token or not hmac.compare_digest(x_internal_token, expected_token):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": {"code": "unauthorized", "message": "Invalid admin token"}},
+        )
+
+    deleted = delete_leaderboard_entry(entry_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "not_found", "message": f"Entry {entry_id} not found"}},
+        )
+    return {"status": "deleted", "id": entry_id}
+
+
+# ------------------------------------------------------------------------------
+# Challenge Mode: Break Attempt & SSE Streaming
+# ------------------------------------------------------------------------------
+@app.post("/api/break", status_code=status.HTTP_202_ACCEPTED)
+async def submit_break(
+    req: BreakRequest,
+    request: Request,
+    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
+):
+    # 1. Honeypot check
+    if req.website and req.website.strip():
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "bad_request", "message": "Bot detected"}},
+        )
+
+    # 2. Refund goal disabled unless ENABLE_REFUND=1
+    enable_refund = os.getenv("ENABLE_REFUND", "0").strip() == "1"
+    if req.goal == "refund" and not enable_refund:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "bad_request", "message": "Refund goal is disabled (contagion is P2)"}},
+        )
+
+    # 3. Input validation
+    clean_text = req.text.strip()
+    if len(clean_text) < 1 or len(clean_text) > 500:
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "bad_request", "message": "Text length must be between 1 and 500 characters"}},
+        )
+
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", clean_text):
+        raise HTTPException(
+            status_code=400,
+            detail={"error": {"code": "bad_request", "message": "Text contains forbidden control characters"}},
+        )
+
+    if req.nickname:
+        clean_nick = req.nickname.strip()
+        if len(clean_nick) > 24 or not re.match(r"^[a-zA-Z0-9 _-]+$", clean_nick):
+            raise HTTPException(
+                status_code=400,
+                detail={"error": {"code": "bad_request", "message": "Nickname must be alphanumeric/space/-/_ <= 24 chars"}},
+            )
+
+    # 4. Rate Limiting & Budget
+    limiter = get_rate_limiter()
+    client_ip = request.client.host if request.client else "127.0.0.1"
+
+    if req.preset_id:
+        # Presets cost 0 live calls, checked only against session limit
+        with limiter.lock:
+            limiter._check_rollover()
+            if x_session_id:
+                s_count = limiter.session_counts.get(x_session_id, 0)
+                if s_count >= limiter.session_limit:
+                    raise HTTPException(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        detail={
+                            "error": {
+                                "code": "rate_limit_exceeded",
+                                "message": "Daily session limit reached",
+                                "reason": "rate",
+                                "retry_after": 3600,
+                            }
+                        },
+                    )
+                limiter.session_counts[x_session_id] = s_count + 1
+    else:
+        # Live attempt: enforce session, IP, and global budget
+        allowed, reason, retry_after = limiter.check_limits(x_session_id, client_ip)
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error": {
+                        "code": "rate_limit_exceeded",
+                        "message": f"Daily limit exceeded: {reason}",
+                        "reason": reason,
+                        "retry_after": retry_after,
+                    }
+                },
+            )
+
+    # 5. Enqueue attempt
+    challenge_mgr = get_challenge_manager()
+    req_dict = req.model_dump()
+    req_dict["text"] = clean_text
+
+    try:
+        attempt_id = await challenge_mgr.enqueue_attempt(req_dict)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": {
+                    "code": "rate_limit_exceeded",
+                    "message": "Challenge queue is full, please retry shortly",
+                    "reason": "queue",
+                    "retry_after": 10,
+                }
+            },
+        )
+
+    return {"attempt_id": attempt_id}
+
+
+@app.get("/api/break/{attempt_id}/stream")
+async def stream_break_events(attempt_id: str):
+    challenge_mgr = get_challenge_manager()
+    state = challenge_mgr.get_attempt(attempt_id)
+    if not state:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "not_found", "message": f"Attempt {attempt_id} not found"}},
+        )
+
+    return StreamingResponse(
+        stream_attempt_events(attempt_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@app.get("/api/break/{attempt_id}")
+async def get_break_verdict(attempt_id: str) -> Dict[str, Any]:
+    challenge_mgr = get_challenge_manager()
+    state = challenge_mgr.get_attempt(attempt_id)
+    if not state:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "not_found", "message": f"Attempt {attempt_id} not found"}},
+        )
+
+    if not state.done or not state.verdict:
+        return {"status": "running", "attempt_id": attempt_id}
+
+    res = dict(state.verdict)
+    if state.req_data.get("share"):
+        res["text"] = state.req_data.get("text")
+    return res
 
 
 # ------------------------------------------------------------------------------

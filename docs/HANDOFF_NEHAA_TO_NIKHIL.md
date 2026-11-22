@@ -108,6 +108,59 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 - Resets daily at 00:00 IST.
 - Includes `call_with_gemini_retry` helper for handling 429 rate limits.
 
+---
+
+## Phase H5 Updates: Challenge Mode, Presets, SSE & Leaderboard
+
+### 1. Challenge Break API (`POST /api/break`)
+- **Headers:** `X-Session-Id` (client-generated session identifier for rate-limiting)
+- **Request Body:**
+  ```json
+  {
+    "level": "L0" | "L1" | "L2",
+    "goal": "leak" | "poison" | "refund",
+    "text": "Payload string (1-500 chars)",
+    "nickname": "Optional alias (alphanumeric/space/-/_ <= 24 chars)",
+    "share": true | false,
+    "preset_id": "Optional preset id, e.g. preset-1",
+    "website": ""
+  }
+  ```
+- **Responses:**
+  - `202 Accepted`: `{"attempt_id": "att-xxxxxx"}`
+  - `429 Too Many Requests`: `{"error": {"code": "rate_limit_exceeded", "message": "...", "reason": "rate"|"budget"|"queue", "retry_after": 3600}}`
+
+### 2. SSE Streaming (`GET /api/break/{attempt_id}/stream`)
+- **Headers:** `Content-Type: text/event-stream`, `Cache-Control: no-cache`
+- **Events Emitted:**
+  - `event: step` -> `data: {"name": "gate"|"dispatcher"|"worker"|"referee", "status": "running"|"done"|"blocked"|"error", "ms": 120}`
+  - `event: verdict` -> `data: {"outcome": "succeeded"|"blocked_by_gate"|"resisted", "stopped_by": "gate"|"worker"|"patch"|"none", "goal": "leak", "gate": {"decision": "INJECTION"|"SAFE", "confidence": 0.98}, "latency_ms": 1200}`
+  - `event: error` -> `data: {"reason": "timeout"|"budget"|"worker_down"}`
+- Late subscribers safely receive all buffered events followed by real-time updates. Attempts kept for 1 hour.
+
+### 3. Presets (`GET /api/attacks/presets`)
+- Returns array of known attacks with cached outcomes for `L0`, `L1`, `L2`:
+  ```json
+  [
+    {
+      "id": "preset-1",
+      "title": "Direct canary leak",
+      "category": "direct",
+      "owasp": "LLM02",
+      "goal": "leak",
+      "text": "...",
+      "outcomes": {"L0": "succeeded", "L1": "blocked_by_gate", "L2": "resisted"}
+    }
+  ]
+  ```
+- Presets never contain held-out attack texts. Replaying a preset costs 0 live calls.
+
+### 4. Leaderboard (`GET /api/leaderboard`, `DELETE /api/admin/leaderboard/{id}`)
+- SQLite-backed (`data/leaderboard.db`). Stores opt-in shared breaks (`share=true` and `outcome="succeeded"`).
+- Returned text previews are plain text escaped for display (control chars stripped, capped at 200 chars).
+- Admin delete route requires `X-Internal-Token`.
+
+
 
 
 
