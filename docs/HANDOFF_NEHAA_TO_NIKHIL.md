@@ -78,5 +78,36 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 - Reports contain defense profiles, summary KPIs, attack evaluation tables with stopping layer attribution, patch history, and full JSON specification diffs for R2.
 - Output contains zero API keys or credentials.
 
+---
+
+## Phase H4 Updates: API Core, Gate Service, Budget & Rate Limiting
+
+### 1. API Server & Endpoints (`api/main.py`)
+- **Local Dev Base URL:** `http://localhost:8000` (run via `uvicorn api.main:app --port 8000`)
+- **Endpoints Implemented:**
+  - `GET /api/health`: Liveness probe (`{"status": "ok"}`).
+  - `GET /api/status`: `{mode: "live"|"replay", worker: "up"|"down", queue_depth, levels, budget}`.
+  - `GET /api/results`: Full `results.json` (fallback to `data/mock/results.json`).
+  - `GET /api/events/{round}`: Replay event sequence (`R0`, `R1`, `R2`).
+  - `GET /api/reports/{round}.md`: Markdown report for round (`text/markdown`).
+  - `GET /api/leaderboard`: Break challenge leaderboard stub.
+  - `POST /internal/screen`: Internal screening endpoint for Dispatcher.
+
+### 2. Gate Client Integration & INTERNAL_TOKEN
+- When the Dispatcher forwards payloads to `/internal/screen`, it must provide the header:
+  `X-Internal-Token: <INTERNAL_TOKEN>`
+- Verified using constant-time comparison (`hmac.compare_digest`). Missing or invalid tokens immediately yield `401 Unauthorized`.
+- Request body: `{"text": "<input_text>", "stage": "inbound"}` (max 500 chars).
+- Response body: `{"decision": "SAFE" | "INJECTION" | "ERROR", "confidence": float, "cached": bool}`.
+- Fail-closed on timeout (5s), network error, or budget exhaustion (`decision="ERROR", blocked=true`).
+- Caches results by SHA-256 on disk in `data/cache/gate/`.
+
+### 3. Budget Governor (`api/budget.py`)
+- Persisted in `data/budget.json` (survives process restarts).
+- Hard stops at **80% threshold** of daily caps (`LLM_DAILY_CAP` default 200, `LYZR_DAILY_CAP` default 15).
+- Resets daily at 00:00 IST.
+- Includes `call_with_gemini_retry` helper for handling 429 rate limits.
+
+
 
 
