@@ -34,8 +34,19 @@ def _is_mock_mode() -> bool:
 
 
 # ==============================================================================
-# SECTION: NIKHIL OWNED IMPLEMENTATIONS (Agent layer, Transport, Sandbox, Blue)
+# SECTION: NIKHIL OWNED IMPLEMENTATIONS (Agent layer, Transport, Sandbox, Blue, GateClient)
 # ==============================================================================
+
+def get_gate_client() -> Gate:
+    if _is_mock_mode():
+        return MockGate()
+    try:
+        from agents.gate_client import GateClient
+        return GateClient()
+    except Exception as e:
+        warnings.warn(f"Failed to load GateClient ({e}), falling back to MockGate")
+        return MockGate()
+
 
 def get_transport() -> Transport:
     if _is_mock_mode():

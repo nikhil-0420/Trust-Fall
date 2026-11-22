@@ -103,6 +103,7 @@ class WorkerCore:
         start_time = time.perf_counter()
         llm_calls = 0
         error: Optional[str] = None
+        policy_denied: bool = False
         outbound_messages: List[str] = []
 
         # Policy enforcement: enforced ONLY at L2; L0 and L1 have no policy enforcement
@@ -178,7 +179,9 @@ class WorkerCore:
                 tool_name = action.get("tool")
                 if tool_name == "write_memory":
                     note_text = str(action.get("text", ""))
-                    tools.write_memory(note_text, state_dir=self.state_dir, policy=active_policy)
+                    w_res = tools.write_memory(note_text, state_dir=self.state_dir, policy=active_policy)
+                    if w_res.get("policy_denied"):
+                        policy_denied = True
                 elif tool_name == "read_memory":
                     tools.read_memory(state_dir=self.state_dir, policy=active_policy)
                 elif tool_name == "send_report":
@@ -232,4 +235,5 @@ class WorkerCore:
             latency_ms=latency_ms,
             llm_calls=llm_calls,
             error=error,
+            policy_denied=policy_denied if envelope.profile == "L2" else False,
         )

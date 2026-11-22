@@ -105,3 +105,23 @@ Refer to `docs/OWNERSHIP.md`:
 - The outcome returns `outbound_messages` containing the final report text.
 - Real Gemini adapter implemented in `agents/llm_gemini.py` (`GeminiLLM`), integrated into `arena/factory.py` under `LLM_IMPL=gemini`.
 
+---
+
+## 6. Policy Enforcement & Envelope Signatures (Phase N2 Update)
+
+- **Defense Profile Semantics:**
+  - `L0`: Baseline. No gate at Dispatcher, no policy enforcement at Worker. All attacks reach worker.
+  - `L1`: Lyzr Gate active at Dispatcher only. Blunt prompt injection is blocked pre-dispatch. Worker core runs without local policy.
+  - `L2`: Gate active at Dispatcher PLUS local deterministic policy enforcement at Worker (`Policy` loaded from `patch.json`).
+- **Policy Engine (`agents/policy.py`):**
+  - Memory write checks: `allow_memory_write(text)` validates `deny_patterns`, `max_len`, and `note_format == "fact_only"`.
+  - Report redaction: `redact_report(text)` scrubs patterns configured by Blue (canary regex, base64 tokens).
+  - Timeout protection: regex operations exceeding 50ms are safely skipped and logged.
+  - When memory write is denied at L2, `outcome.policy_denied` is set to `True`.
+- **Signed Envelopes (`agents/envelope.py`):**
+  - HMAC-SHA256 over canonical `{ticket_id, profile, text, kind}` with `INTERNAL_TOKEN`.
+  - Fail-safe rule: Any unsigned or tampered message automatically falls back to profile `L2` and is flagged.
+- **Gate Client (`agents/gate_client.py`):**
+  - Implements `Gate` protocol, calls `POST /internal/screen` with `X-Internal-Token`. Fails CLOSED (`decision="ERROR", blocked=True`) on timeout or network error. Accessible via `get_gate_client()` in `arena.factory`.
+
+
