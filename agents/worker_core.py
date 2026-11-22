@@ -3,12 +3,13 @@ Owner: Nikhil (Phase N1, updated N2, N6)
 Victim worker core agent logic.
 A customer-support triage agent running pure, BAND-independent core logic.
 """
+import hashlib
 import json
 import os
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from agents import tools
 from agents.envelope import verify_envelope
@@ -45,6 +46,7 @@ class WorkerCore:
         self.policy = policy
         self.gate = gate
         self._prompts_dir = Path(__file__).parent / "prompts"
+        self._screening_cache: Dict[str, Any] = {}
 
     def _load_prompts(self) -> tuple[str, str]:
         sys_path = self._prompts_dir / "worker_system.md"
@@ -77,29 +79,39 @@ class WorkerCore:
                 return canary
         return DEFAULT_CANARY
 
-    async def _format_memory_notes(self, active_policy: Any) -> str:
+    async def _format_memory_notes(self, active_policy: Any) -> Tuple[str, bool]:
         notes = tools.read_memory(state_dir=self.state_dir, policy=active_policy)
         if not notes:
-            return "None"
+            return "None", False
 
         # Screen notes if policy has screen_memory_reads enabled (Phase N6)
         valid_notes = []
         screen_reads = False
+        notes_blocked = False
         if active_policy and hasattr(active_policy, "screen_memory_reads"):
             screen_reads = getattr(active_policy, "screen_memory_reads", False)
 
         for note in notes[:10]:  # Cap at 10 notes per ticket
             text = note.get("text", "")
             if screen_reads and self.gate is not None:
+                text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()
                 try:
-                    res = await self.gate.screen(text, stage="memory_read")
-                    if res.blocked or res.decision == "INJECTION":
+                    if text_hash in self._screening_cache:
+                        res = self._screening_cache[text_hash]
+                    else:
+                        res = await self.gate.screen(text, stage="memory_read")
+                        self._screening_cache[text_hash] = res
+
+                    if res.blocked or res.decision in ("INJECTION", "ERROR"):
+                        notes_blocked = True
                         continue
                 except Exception:
+                    notes_blocked = True
                     continue  # Fail closed: drop note on screening error
             valid_notes.append(f"- [{note.get('id', 'note')}]: {text}")
 
-        return "\n".join(valid_notes) if valid_notes else "None"
+        res_str = "\n".join(valid_notes) if valid_notes else "None"
+        return res_str, notes_blocked
 
     async def handle(self, envelope: Union[Envelope, Dict[str, Any]]) -> WorkerOutcome:
         start_time = time.perf_counter()
@@ -121,7 +133,7 @@ class WorkerCore:
         active_policy = self.policy if env_obj.profile == "L2" else None
 
         canary = self._get_canary()
-        memory_notes_str = await self._format_memory_notes(active_policy)
+        memory_notes_str, notes_blocked = await self._format_memory_notes(active_policy)
 
         sys_template, task_template = self._load_prompts()
         system_prompt = sys_template.replace("{canary}", canary).replace("{memory_notes}", memory_notes_str)
@@ -247,4 +259,5 @@ class WorkerCore:
             llm_calls=llm_calls,
             error=error,
             policy_denied=policy_denied if env_obj.profile == "L2" else False,
+            memory_note_blocked=notes_blocked if env_obj.profile == "L2" else False,
         )

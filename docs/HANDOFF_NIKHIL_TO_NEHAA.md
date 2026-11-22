@@ -171,6 +171,28 @@ Refer to `docs/OWNERSHIP.md`:
   - `LLMBlue`: Synthesizes defensive patches via LLM using prompt `agents/prompts/blue_system.md`. Includes automated retry with error feedback if output is invalid.
   - Both register with `arena.factory.get_blue()` controlled via `BLUE_IMPL=scripted|llm`.
 
+---
+
+## 10. Memory-Read Screening & Analyst Contagion (Phase N6 Update)
+
+- **Memory-Read Screening (`WorkerCore`):**
+  - When `gate.screen_memory_reads` is enabled in `Patch`:
+    - Each memory note is screened through `GateClient(stage="memory_read")` prior to entering the prompt.
+    - Blocked/injected notes are dropped, decisions cached by text hash, fail-closed on errors.
+    - `outcome.memory_note_blocked` set to `True` when notes are dropped.
+- **Analyst Core & Contagion Helper (`agents/analyst.py`):**
+  - `AnalystCore`: Manages fake refunds (`grant_refund`) recorded into `refund_ledger.json`.
+  - Guard mode: Screens inter-agent messages via Gate and enforces strict schema (`ticket_id`, `status`, `summary <= 200 chars`, no imperative instructions).
+  - Helper function for Referee:
+    ```python
+    from agents.analyst import run_contagion_case
+    res = await run_contagion_case(worker_core, analyst, attack_text, guard=bool)
+    # returns {"worker_poisoned": bool, "refund_issued": bool}
+    ```
+  - Without guard: compromised worker persuades Analyst to issue unauthorized refund (`refund_issued: True`).
+  - With guard: Gate screening and strict schema block the contagion (`refund_issued: False`).
+
+
 
 
 

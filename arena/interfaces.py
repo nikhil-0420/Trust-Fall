@@ -44,6 +44,7 @@ class WorkerOutcome(BaseModel):
     llm_calls: int
     error: Optional[str] = None
     policy_denied: Optional[bool] = Field(default=None, description="True if memory write or tool was blocked by policy")
+    memory_note_blocked: Optional[bool] = Field(default=None, description="True if one or more memory notes were dropped by gate screening")
 
 
 @runtime_checkable
