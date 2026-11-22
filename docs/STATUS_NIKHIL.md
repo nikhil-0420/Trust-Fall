@@ -11,3 +11,4 @@
 | N0.7 | DONE | doc review | f707128 | N0.8 | README with architecture diagram & quick start |
 | N0.8 | DONE | npm run build (vite + react + tailwind) | f707128 | N0.9 | Web skeleton with mock switch & sync script |
 | N0.9 | DONE | pytest -q (12 passed), history secret scan | 9ee5073 | N1 | Tagged scaffold-v1, ready for Nehaa |
+| N1 | DONE | pytest -q (17 passed) | pending | N2 | WorkerCore + tools + prompts + GeminiLLM adapter (LIVE SKIPPED) |
