@@ -1,19 +1,22 @@
 """scripts/run_full.py
 Executes the full 3-round Trust Fall Arena run (R0 -> R1 -> R2).
 Safe by default: if USE_MOCKS=1 or LIVE_APPROVED!=1, executes dry-run mode.
-Owner: Nehaa (WS-B B3, WS-D)
+Owner: Nehaa (WS-B B3, WS-D) - Extended with timeout, budget shrink, and BAND dispatcher runner.
 """
 
 import argparse
 import asyncio
+from datetime import datetime, timezone
 import os
-import sys
 from pathlib import Path
+import sys
 
 # Add repo root to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
+from api.budget import get_budget
+from arena.events import EventWriter
 from arena.factory import (
     get_blue,
     get_gate,
@@ -25,11 +28,22 @@ from arena.factory import (
 from arena.referee import Referee
 
 
+def log_external_call(service: str, purpose: str, count: int = 1):
+    ledger = REPO_ROOT / "docs" / "CALL_LEDGER.md"
+    if ledger.exists():
+        timestamp = datetime.now(timezone.utc).isoformat()
+        with open(ledger, "a", encoding="utf-8") as f:
+            f.write(f"| {timestamp} | {service} | {purpose} | {count} |\n")
+
+
 async def main():
     parser = argparse.ArgumentParser(description="Trust Fall Full Arena Runner")
     parser.add_argument("--live", action="store_true", help="Request live run (requires LIVE_APPROVED=1)")
     parser.add_argument("--rollback-demo", action="store_true", help="Demonstrate rejected patch rollback first")
     parser.add_argument("--run-id", type=str, default=None, help="Custom run identifier")
+    parser.add_argument("--timeout", type=float, default=20.0, help="Per-ticket referee timeout in seconds")
+    parser.add_argument("--attacks-per-round", type=int, default=4, help="Number of attacks per round")
+    parser.add_argument("--benign-count", type=int, default=5, help="Number of benign tickets per round")
     args = parser.parse_args()
 
     use_mocks = os.getenv("USE_MOCKS", "1").strip() != "0"
@@ -39,31 +53,79 @@ async def main():
         print("[!] LIVE run requested but USE_MOCKS!=0 or LIVE_APPROVED!=1.")
         print("    Running in safe dry-run mock mode instead.")
 
-    transport = get_transport()
-    sandbox = get_sandbox()
-    gate = get_gate()
-    llm = get_llm()
-    red = get_red()
-    blue = get_blue()
+    # Set ticket timeout in environment so all transports / referees respect it
+    os.environ["TICKET_TIMEOUT_S"] = str(args.timeout)
 
-    referee = Referee(
-        transport=transport,
-        sandbox=sandbox,
-        gate=gate,
-        llm=llm,
-        red=red,
-        blue=blue,
+    run_id = args.run_id or f"run-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+
+    # Initialize EventWriter and Budget
+    events = EventWriter(
+        run_id=run_id,
+        base_dir=REPO_ROOT / "data" / "runs",
+        cache_dir=REPO_ROOT / "data" / "cache",
     )
+    budget = get_budget()
 
-    print("[*] Starting Arena full run...")
-    results = await referee.run_full(
-        run_id=args.run_id,
-        rollback_demo=args.rollback_demo,
-    )
+    # Hook subscriber to log live calls to CALL_LEDGER.md
+    def on_event(ev):
+        if not use_mocks and live_approved:
+            if ev.type == "gate" and not ev.cached:
+                log_external_call("Lyzr", "gate_screen", 1)
+            elif ev.type == "message" and ev.from_agent == "worker":
+                log_external_call("Gemini", "worker_llm", 1)
+            elif ev.type == "patch":
+                log_external_call("Gemini", "blue_llm_patch", 1)
 
-    print(f"[*] Run completed successfully! Run ID: {results.run_id}")
-    for rnd in results.rounds:
-        print(f"    - Round {rnd.id} ({rnd.label}): ASR={rnd.asr:.2f}, Benign={rnd.benign.passed}/{rnd.benign.total}")
+    events.add_subscriber(on_event)
+
+    transport_type = os.getenv("TRANSPORT", "mock").strip().lower()
+    disp_agent = None
+    disp_task = None
+
+    if transport_type == "band" and not use_mocks and live_approved:
+        from agents.dispatcher import Dispatcher
+        from agents.dispatcher_band import BandDispatcherAgent
+        from arena.factory import get_gate_client
+        disp_agent = BandDispatcherAgent(dispatcher=Dispatcher(gate=get_gate_client()))
+        disp_task = asyncio.create_task(disp_agent.run(interval_s=1.0))
+        await disp_agent.wait_ready()
+
+    try:
+        transport = get_transport()
+        sandbox = get_sandbox()
+        gate = get_gate()
+        red = get_red()
+        blue = get_blue()
+
+        referee = Referee(
+            transport=transport,
+            sandbox=sandbox,
+            gate=gate,
+            red=red,
+            blue=blue,
+            events=events,
+            budget=budget,
+            benign_count=args.benign_count,
+        )
+
+        print(f"[*] Starting Arena full run ({run_id})...")
+        results = await referee.run_full(
+            run_id=run_id,
+            attacks_per_round=args.attacks_per_round,
+            rollback_demo=args.rollback_demo,
+        )
+
+        print(f"[*] Run completed successfully! Run ID: {results.run_id}")
+        for rnd in results.rounds:
+            print(f"    - Round {rnd.id} ({rnd.label}): ASR={rnd.asr:.2f}, Benign={rnd.benign.passed}/{rnd.benign.total}")
+
+        return results
+
+    finally:
+        if disp_agent:
+            disp_agent.stop()
+        if disp_task:
+            disp_task.cancel()
 
 
 if __name__ == "__main__":

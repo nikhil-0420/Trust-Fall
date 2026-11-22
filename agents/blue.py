@@ -139,50 +139,54 @@ class LLMBlue(BlueAgent):
 
         task_prompt += "\n\nSynthesize the next patch and reply with JSON ONLY."
 
-        # Attempt 1
-        raw_output = await self.llm.complete(
-            system=system_prompt,
-            prompt=task_prompt,
-            purpose="blue_patch",
-            json_mode=True,
-        )
+        try:
+            # Attempt 1
+            raw_output = await self.llm.complete(
+                system=system_prompt,
+                prompt=task_prompt,
+                purpose="blue_patch",
+                json_mode=True,
+            )
 
-        patch_dict = self._parse_json(raw_output)
-        if patch_dict is not None:
-            ok, errors, _ = validate_patch(patch_dict)
-            if ok:
-                return patch_dict
-        else:
-            errors = ["Invalid JSON format"]
+            patch_dict = self._parse_json(raw_output)
+            if patch_dict is not None:
+                ok, errors, _ = validate_patch(patch_dict)
+                if ok:
+                    return patch_dict
+            else:
+                errors = ["Invalid JSON format"]
 
-        # Attempt 2 (Retry once with validation errors appended)
-        retry_prompt = (
-            f"{task_prompt}\n\n"
-            f"Your previous proposal was rejected with validation errors:\n"
-            f"{json.dumps(errors)}\n"
-            f"Please correct the errors and output valid JSON ONLY."
-        )
+            # Attempt 2 (Retry once with validation errors appended)
+            retry_prompt = (
+                f"{task_prompt}\n\n"
+                f"Your previous proposal was rejected with validation errors:\n"
+                f"{json.dumps(errors)}\n"
+                f"Please correct the errors and output valid JSON ONLY."
+            )
 
-        raw_output_retry = await self.llm.complete(
-            system=system_prompt,
-            prompt=retry_prompt,
-            purpose="blue_patch",
-            json_mode=True,
-        )
+            raw_output_retry = await self.llm.complete(
+                system=system_prompt,
+                prompt=retry_prompt,
+                purpose="blue_patch",
+                json_mode=True,
+            )
 
-        patch_dict_retry = self._parse_json(raw_output_retry)
-        if patch_dict_retry is not None:
-            ok, _, _ = validate_patch(patch_dict_retry)
-            if ok:
-                return patch_dict_retry
+            patch_dict_retry = self._parse_json(raw_output_retry)
+            if patch_dict_retry is not None:
+                ok, _, _ = validate_patch(patch_dict_retry)
+                if ok:
+                    return patch_dict_retry
 
-        # If still invalid after 2 calls, fallback to previous patch or default
-        if previous_patch is not None:
-            ok, _, _ = validate_patch(previous_patch)
-            if ok:
-                return previous_patch
+            # If still invalid after 2 calls, fallback to previous patch or default
+            if previous_patch is not None:
+                ok, _, _ = validate_patch(previous_patch)
+                if ok:
+                    return previous_patch
 
-        return DEFAULT_SAFE_PATCH
+            return DEFAULT_SAFE_PATCH
+        except Exception as e:
+            logger.warning(f"LLMBlue failed with error ({e}); falling back to ScriptedBlue")
+            return await ScriptedBlue().propose_patch(incident_log, previous_patch, rejected_reason)
 
     def _parse_json(self, text: str) -> dict[str, Any] | None:
         text = text.strip()

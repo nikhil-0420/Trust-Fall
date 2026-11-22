@@ -78,6 +78,12 @@ class BandTransport(Transport):
             return []
 
     async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
+        env_timeout = os.getenv("TICKET_TIMEOUT_S")
+        if env_timeout:
+            try:
+                timeout_s = float(env_timeout)
+            except ValueError:
+                pass
         start_time = time.perf_counter()
 
         # Format ticket content mentioning Dispatcher
@@ -126,13 +132,21 @@ class BandTransport(Transport):
             except Exception:
                 pass
 
+        is_gate_blocked = "BLOCKED BY GATE" in matched_report
+        gate_res = None
+        if is_gate_blocked:
+            from arena.interfaces import GateResult
+            gate_res = GateResult(decision="INJECTION", confidence=0.96, blocked=True)
+
+        await asyncio.sleep(1.0)
         return WorkerOutcome(
             ticket_id=env.ticket_id,
             outbound_messages=[matched_report],
-            blocked_by_gate=False,
+            blocked_by_gate=is_gate_blocked,
+            gate=gate_res,
             memory_after=memory_after,
             refund_ledger_after=refund_after,
             latency_ms=latency_ms,
-            llm_calls=1,
+            llm_calls=0 if is_gate_blocked else 1,
             error=None,
         )

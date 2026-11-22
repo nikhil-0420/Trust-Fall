@@ -89,3 +89,12 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-22T17:09:10.169890+00:00 | BAND | dispatcher_forward_seq | 1 |
 | 2026-11-22T17:09:10.170272+00:00 | BAND | worker_report_seq | 1 |
 | 2026-11-22T17:09:10.170937+00:00 | Gemini | worker_llm_seq | 1 |
+| 2026-11-22T18:04:40.000000+00:00 | Lyzr | gate_smoke_preflight | 1 |
+| 2026-11-22T18:09:05.221485+00:00 | BAND | send_ticket_live | 1 |
+| 2026-11-22T18:09:05.222865+00:00 | BAND | dispatcher_forward_live | 1 |
+| 2026-11-22T18:09:05.224031+00:00 | BAND | worker_report_live | 1 |
+| 2026-11-22T18:09:05.226104+00:00 | Gemini | worker_llm_live | 1 |
+| 2026-11-22T18:30:04.230230+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-22T18:32:13.193597+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-22T18:32:14.827649+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-22T18:34:22.806174+00:00 | Gemini | blue_llm_patch | 1 |

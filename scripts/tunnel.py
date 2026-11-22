@@ -88,12 +88,17 @@ def main():
             match = url_regex.search(line)
             if match and not public_url_found:
                 public_url = match.group(0)
-                print("\n" + "=" * 60)
-                print(f"  Trust Fall Public Tunnel URL: {public_url}")
-                print(f"  Set GATE_URL={public_url} in sandbox .env")
-                print(f"  Set VITE_API_URL={public_url} in frontend Vercel settings")
-                print("=" * 60 + "\n")
+                print("\n" + "=" * 60, flush=True)
+                print(f"  Trust Fall Public Tunnel URL: {public_url}", flush=True)
+                print(f"  Set GATE_URL={public_url} in sandbox .env", flush=True)
+                print(f"  Set VITE_API_URL={public_url} in frontend Vercel settings", flush=True)
+                print("=" * 60 + "\n", flush=True)
                 public_url_found = True
+                try:
+                    with open(".tunnel_url", "w", encoding="utf-8") as tf:
+                        tf.write(public_url.strip())
+                except Exception:
+                    pass
 
     except KeyboardInterrupt:
         print("\n[*] Shutting down tunnel and API...")

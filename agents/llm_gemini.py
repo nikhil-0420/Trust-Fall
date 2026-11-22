@@ -106,7 +106,7 @@ class GeminiLLM(LLM):
             except Exception as e:
                 last_error = e
                 err_str = str(e).lower()
-                if "429" in err_str or "resource_exhausted" in err_str or "quota" in err_str:
+                if "429" in err_str or "503" in err_str or "unavailable" in err_str or "resource_exhausted" in err_str or "quota" in err_str:
                     await asyncio.sleep(2 ** attempt)
                     continue
                 raise e

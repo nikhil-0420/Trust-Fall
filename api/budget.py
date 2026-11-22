@@ -108,6 +108,22 @@ class Budget:
             except Exception:
                 pass
 
+    def can_spend(self, kind: str, count: int = 1) -> bool:
+        """
+        Check if spend would stay under 80% cap without deducting.
+        """
+        with self.lock:
+            today = self._current_ist_date()
+            if today != self.date_str:
+                return True
+            if kind == "llm":
+                limit = int(self.llm_cap * self.threshold)
+                return (self.llm_used + count) <= limit
+            elif kind == "lyzr":
+                limit = int(self.lyzr_cap * self.threshold)
+                return (self.lyzr_used + count) <= limit
+            return True
+
     def try_spend(self, kind: str, count: int = 1) -> bool:
         """
         Check if spend would stay under 80% cap. If so, deduct and persist immediately.

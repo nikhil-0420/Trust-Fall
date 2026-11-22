@@ -1,5 +1,6 @@
 # Environment and secrets
 .env
+.tunnel_url
 agent_config.yaml
 *.env.*
 !.env.example
