@@ -1,0 +1,518 @@
+{
+  "$defs": {
+    "BenignSummary": {
+      "properties": {
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total",
+        "passed"
+      ],
+      "title": "BenignSummary",
+      "type": "object"
+    },
+    "BudgetSummary": {
+      "properties": {
+        "llm_calls": {
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "lyzr_calls": {
+          "title": "Lyzr Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "llm_calls",
+        "lyzr_calls"
+      ],
+      "title": "BudgetSummary",
+      "type": "object"
+    },
+    "ContagionSummary": {
+      "properties": {
+        "enabled": {
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "asr_without_guard": {
+          "title": "Asr Without Guard",
+          "type": "number"
+        },
+        "asr_with_guard": {
+          "title": "Asr With Guard",
+          "type": "number"
+        }
+      },
+      "required": [
+        "enabled",
+        "asr_without_guard",
+        "asr_with_guard"
+      ],
+      "title": "ContagionSummary",
+      "type": "object"
+    },
+    "MemoryWriteRules": {
+      "additionalProperties": false,
+      "properties": {
+        "deny_patterns": {
+          "description": "Regex patterns to deny in memory writes",
+          "items": {
+            "type": "string"
+          },
+          "title": "Deny Patterns",
+          "type": "array"
+        },
+        "max_len": {
+          "default": 120,
+          "description": "Max allowed length for note",
+          "maximum": 500,
+          "minimum": 20,
+          "title": "Max Len",
+          "type": "integer"
+        },
+        "note_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "fact_only",
+          "description": "Format requirement for note",
+          "title": "Note Format"
+        }
+      },
+      "title": "MemoryWriteRules",
+      "type": "object"
+    },
+    "Patch": {
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "description": "Patch version number",
+          "title": "Version",
+          "type": "integer"
+        },
+        "memory_write_rules": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MemoryWriteRules"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tool_policy": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "$ref": "#/$defs/ToolPolicyRule"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Policy"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PatchGateConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "",
+          "description": "One-line rationale",
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "Patch",
+      "type": "object"
+    },
+    "PatchEntry": {
+      "additionalProperties": true,
+      "properties": {
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "applied",
+            "rejected",
+            "rolled_back"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "patch": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Patch"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "version",
+        "status",
+        "summary"
+      ],
+      "title": "PatchEntry",
+      "type": "object"
+    },
+    "PatchGateConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "screen_tool_outputs": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Screen Tool Outputs"
+        },
+        "screen_memory_reads": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Screen Memory Reads"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "maximum": 0.95,
+              "minimum": 0.05,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0.3,
+          "title": "Threshold"
+        }
+      },
+      "title": "PatchGateConfig",
+      "type": "object"
+    },
+    "RoundAttackResult": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "owasp": {
+          "title": "Owasp",
+          "type": "string"
+        },
+        "goal": {
+          "enum": [
+            "leak",
+            "poison",
+            "refund"
+          ],
+          "title": "Goal",
+          "type": "string"
+        },
+        "known": {
+          "title": "Known",
+          "type": "boolean"
+        },
+        "outcome": {
+          "enum": [
+            "succeeded",
+            "blocked_by_gate",
+            "resisted"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "gate": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gate"
+        },
+        "latency_ms": {
+          "title": "Latency Ms",
+          "type": "integer"
+        },
+        "llm_calls": {
+          "title": "Llm Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "owasp",
+        "goal",
+        "known",
+        "outcome",
+        "latency_ms",
+        "llm_calls"
+      ],
+      "title": "RoundAttackResult",
+      "type": "object"
+    },
+    "RoundResult": {
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "enum": [
+            "R0",
+            "R1",
+            "R2",
+            "CH"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "gate": {
+          "title": "Gate",
+          "type": "boolean"
+        },
+        "patch_version": {
+          "title": "Patch Version",
+          "type": "integer"
+        },
+        "attacks": {
+          "items": {
+            "$ref": "#/$defs/RoundAttackResult"
+          },
+          "title": "Attacks",
+          "type": "array"
+        },
+        "asr": {
+          "title": "Asr",
+          "type": "number"
+        },
+        "asr_known": {
+          "title": "Asr Known",
+          "type": "number"
+        },
+        "asr_heldout": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asr Heldout"
+        },
+        "benign": {
+          "$ref": "#/$defs/BenignSummary"
+        },
+        "gate_blocks": {
+          "title": "Gate Blocks",
+          "type": "integer"
+        },
+        "llm_calls": {
+          "title": "Llm Calls",
+          "type": "integer"
+        },
+        "lyzr_calls": {
+          "title": "Lyzr Calls",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "gate",
+        "patch_version",
+        "attacks",
+        "asr",
+        "asr_known",
+        "benign",
+        "gate_blocks",
+        "llm_calls",
+        "lyzr_calls"
+      ],
+      "title": "RoundResult",
+      "type": "object"
+    },
+    "ToolPolicyRule": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Allowed"
+        },
+        "redact_patterns": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redact Patterns"
+        }
+      },
+      "title": "ToolPolicyRule",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "properties": {
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "generated_at": {
+      "title": "Generated At",
+      "type": "string"
+    },
+    "models": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Models",
+      "type": "object"
+    },
+    "rounds": {
+      "items": {
+        "$ref": "#/$defs/RoundResult"
+      },
+      "title": "Rounds",
+      "type": "array"
+    },
+    "patches": {
+      "items": {
+        "$ref": "#/$defs/PatchEntry"
+      },
+      "title": "Patches",
+      "type": "array"
+    },
+    "contagion": {
+      "$ref": "#/$defs/ContagionSummary"
+    },
+    "budget": {
+      "$ref": "#/$defs/BudgetSummary"
+    },
+    "sample": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": false,
+      "description": "Flag indicating if sample/mock data",
+      "title": "Sample"
+    }
+  },
+  "required": [
+    "run_id",
+    "models",
+    "rounds",
+    "patches",
+    "contagion",
+    "budget"
+  ],
+  "title": "Results",
+  "type": "object"
+}

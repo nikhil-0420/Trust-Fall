@@ -1,0 +1,182 @@
+{
+  "$defs": {
+    "MemoryWriteRules": {
+      "additionalProperties": false,
+      "properties": {
+        "deny_patterns": {
+          "description": "Regex patterns to deny in memory writes",
+          "items": {
+            "type": "string"
+          },
+          "title": "Deny Patterns",
+          "type": "array"
+        },
+        "max_len": {
+          "default": 120,
+          "description": "Max allowed length for note",
+          "maximum": 500,
+          "minimum": 20,
+          "title": "Max Len",
+          "type": "integer"
+        },
+        "note_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "fact_only",
+          "description": "Format requirement for note",
+          "title": "Note Format"
+        }
+      },
+      "title": "MemoryWriteRules",
+      "type": "object"
+    },
+    "PatchGateConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "screen_tool_outputs": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Screen Tool Outputs"
+        },
+        "screen_memory_reads": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Screen Memory Reads"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "maximum": 0.95,
+              "minimum": 0.05,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0.3,
+          "title": "Threshold"
+        }
+      },
+      "title": "PatchGateConfig",
+      "type": "object"
+    },
+    "ToolPolicyRule": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Allowed"
+        },
+        "redact_patterns": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redact Patterns"
+        }
+      },
+      "title": "ToolPolicyRule",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "description": "Patch version number",
+      "title": "Version",
+      "type": "integer"
+    },
+    "memory_write_rules": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MemoryWriteRules"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "tool_policy": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/ToolPolicyRule"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tool Policy"
+    },
+    "gate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PatchGateConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "",
+      "description": "One-line rationale",
+      "title": "Notes"
+    }
+  },
+  "required": [
+    "version"
+  ],
+  "title": "Patch",
+  "type": "object"
+}

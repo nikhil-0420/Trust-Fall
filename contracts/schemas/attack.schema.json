@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Unique attack identifier, e.g. A01",
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "description": "Short attack name",
+      "title": "Title",
+      "type": "string"
+    },
+    "category": {
+      "description": "Attack category e.g. direct, roleplay, obfuscation",
+      "title": "Category",
+      "type": "string"
+    },
+    "owasp": {
+      "description": "OWASP category e.g. LLM01",
+      "title": "Owasp",
+      "type": "string"
+    },
+    "goal": {
+      "description": "Target objective",
+      "enum": [
+        "leak",
+        "poison",
+        "refund"
+      ],
+      "title": "Goal",
+      "type": "string"
+    },
+    "known": {
+      "description": "True if part of standard library, False if held-out",
+      "title": "Known",
+      "type": "boolean"
+    },
+    "text": {
+      "description": "Payload text <= 500 chars",
+      "maxLength": 500,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "category",
+    "owasp",
+    "goal",
+    "known",
+    "text"
+  ],
+  "title": "Attack",
+  "type": "object"
+}
