@@ -16,4 +16,4 @@
 | N3 | DONE | pytest -q (53 passed) | b01fb00 | N4 | Dispatcher, LoopbackTransport, BandTransport, worker_band (LIVE SKIPPED) |
 | N4 | DONE | pytest -q (56 passed) | d97f26d | N5 | Agent37Sandbox, boot-hook, deploy script, parity tests (LIVE SKIPPED) |
 | N5 | DONE | pytest -q (68 passed) | fadfccd | N6 | Patch validator, ScriptedBlue, LLMBlue, effect tests (LIVE SKIPPED) |
-| N6 | DONE | pytest -q (73 passed) | pending | N7 | Memory-read screening, Analyst agent, contagion helper |
+| N6 | DONE | pytest -q (73 passed) | 19fc8da | N7 | Memory-read screening, Analyst agent, contagion helper |
