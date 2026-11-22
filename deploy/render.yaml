@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: trustfall-api
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: USE_MOCKS
+        value: "1"
+      - key: LIVE_APPROVED
+        value: "0"
+      - key: PORT
+        value: "8000"
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: INTERNAL_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LYZR_API_KEY
+        sync: false
+      - key: AGENT37_API_KEY
+        sync: false
+      - key: SANDBOX_ID
+        sync: false
+      - key: BAND_AGENT_A_ID
+        sync: false
+      - key: BAND_AGENT_A_KEY
+        sync: false
+      - key: BAND_AGENT_B_ID
+        sync: false
+      - key: BAND_AGENT_B_KEY
+        sync: false
+      - key: LLM_DAILY_CAP
+        value: "200"
+      - key: LYZR_DAILY_CAP
+        value: "15"

@@ -181,3 +181,24 @@ Notes, updates, and coordination details provided by Nehaa for Nikhil.
 
 
 
+
+
+---
+
+## Phase H7 Updates: Deploy Configs, Runbook & Cloudflare Tunnel
+
+### 1. Frontend Configuration
+- **API URL Variable:** Set `VITE_API_URL` in the frontend `.env` (or Vercel Environment Variables) to the public URL of the backend (e.g. `https://trustfall-api.onrender.com` or the Cloudflare tunnel URL).
+- If `VITE_API_URL` is omitted or empty, the frontend should default to `http://localhost:8000`.
+
+### 2. CORS Handling
+- The backend reads `ALLOWED_ORIGINS` from the environment.
+- In production, set `ALLOWED_ORIGINS=https://<your-project>.vercel.app`.
+- In local development, `http://localhost:5173`, `http://localhost:3000`, and `http://127.0.0.1:5173` are enabled by default.
+
+### 3. Deployment Artifacts Provided
+- `deploy/Dockerfile`: Hardened container image (`python:3.11-slim`, non-root user `appuser`, defaults to `USE_MOCKS=1`).
+- `deploy/render.yaml`: Blueprint for 1-click Render web service deployment.
+- `deploy/HF_SPACES.md`: Deployment guide for Hugging Face Spaces Docker container.
+- `scripts/tunnel.py`: Quick Cloudflare Tunnel runner (`python scripts/tunnel.py`) to expose local uvicorn instance during live demos.
+- `docs/DEPLOY.md`: Complete operations runbook and post-deployment checklist.

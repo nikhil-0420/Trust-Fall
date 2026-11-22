@@ -21,6 +21,8 @@ web/build/
 
 # Data and logs
 data/runs/
+data/cache/
+*.db
 *.log
 
 # OS
