@@ -13,4 +13,4 @@
 | N0.9 | DONE | pytest -q (12 passed), history secret scan | 9ee5073 | N1 | Tagged scaffold-v1, ready for Nehaa |
 | N1 | DONE | pytest -q (17 passed) | a7f31e2 | N2 | WorkerCore + tools + prompts + GeminiLLM adapter (LIVE SKIPPED) |
 | N2 | DONE | pytest -q (48 passed) | 20268a1 | N3 | Policy engine, signed envelopes, gate client, fail-safe L2 |
-| N3 | DONE | pytest -q (53 passed) | pending | N4 | Dispatcher, LoopbackTransport, BandTransport, worker_band (LIVE SKIPPED) |
+| N3 | DONE | pytest -q (53 passed) | b01fb00 | N4 | Dispatcher, LoopbackTransport, BandTransport, worker_band (LIVE SKIPPED) |
