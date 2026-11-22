@@ -5,3 +5,4 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | Date (UTC) | Task | Model / Protocol | Change Description | Backward-Compatible |
 |---|---|---|---|---|
 | 2026-11-22 | N0.3 | Results | Added optional field `sample: bool = False` to distinguish mock/sample runs | Yes |
+| 2026-11-22 | H1.1 | RoundResult | Added optional field `errors: Optional[int] = 0` to log worker execution errors excluded from ASR | Yes |

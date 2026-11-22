@@ -401,6 +401,19 @@
         "lyzr_calls": {
           "title": "Lyzr Calls",
           "type": "integer"
+        },
+        "errors": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0,
+          "description": "Count of worker execution errors excluded from ASR and retried",
+          "title": "Errors"
         }
       },
       "required": [

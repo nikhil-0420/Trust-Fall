@@ -149,6 +149,7 @@ class RoundResult(BaseModel):
     gate_blocks: int
     llm_calls: int
     lyzr_calls: int
+    errors: Optional[int] = Field(default=0, description="Count of worker execution errors excluded from ASR and retried")
 
 
 class PatchEntry(BaseModel):
