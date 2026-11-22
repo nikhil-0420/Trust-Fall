@@ -11,8 +11,9 @@ import asyncio
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -67,7 +68,7 @@ async def measure():
     model_name = os.getenv("MODEL_NAME", "gemini-3.5-flash-lite")
 
     limits_file = repo_root / "docs" / "LIMITS.md"
-    now_str = datetime.now(timezone.utc).isoformat()
+    now_str = datetime.now(UTC).isoformat()
 
     if use_mocks or not live_approved or not gemini_key:
         print("[*] LIVE SKIPPED (not approved or GEMINI_API_KEY unset). Writing limits template.")

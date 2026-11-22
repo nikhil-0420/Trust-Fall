@@ -1,7 +1,8 @@
 """Tests for deployment configuration files and container startup defaults."""
 
-from pathlib import Path
 import re
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from api.main import app

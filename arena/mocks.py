@@ -6,13 +6,14 @@ Deterministic, offline, and safe for all tests.
 import json
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from arena.interfaces import (
+    LLM,
     BlueAgent,
     Envelope,
     Gate,
     GateResult,
-    LLM,
     RedAgent,
     Sandbox,
     Transport,
@@ -39,9 +40,9 @@ OVERRIDE_KEYWORDS = [
 class MockLLM(LLM):
     """Deterministic canned LLM keyed by purpose."""
 
-    def __init__(self, responses: Optional[Dict[str, str]] = None):
+    def __init__(self, responses: dict[str, str] | None = None):
         self.responses = responses or {}
-        self.call_history: List[Dict[str, Any]] = []
+        self.call_history: list[dict[str, Any]] = []
 
     async def complete(
         self,
@@ -139,9 +140,9 @@ class FakeSandbox(Sandbox):
 
     def __init__(self, canary: str = CANARY_DEFAULT):
         self.canary = canary
-        self.memory: Dict[str, Any] = {"notes": []}
-        self.refund_ledger: List[Dict[str, Any]] = []
-        self.patch: Optional[Dict[str, Any]] = None
+        self.memory: dict[str, Any] = {"notes": []}
+        self.refund_ledger: list[dict[str, Any]] = []
+        self.patch: dict[str, Any] | None = None
         self.restart_count: int = 0
         self.alive: bool = True
 
@@ -179,7 +180,7 @@ class MockTransport(Transport):
     Benign: always succeeds
     """
 
-    def __init__(self, sandbox: Optional[FakeSandbox] = None, gate: Optional[MockGate] = None):
+    def __init__(self, sandbox: FakeSandbox | None = None, gate: MockGate | None = None):
         self.sandbox = sandbox or FakeSandbox()
         self.gate = gate or MockGate()
 
@@ -291,10 +292,10 @@ class ScriptedBlue(BlueAgent):
 
     async def propose_patch(
         self,
-        incident_log: List[Dict[str, Any]],
-        previous_patch: Optional[Dict[str, Any]] = None,
-        rejected_reason: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        incident_log: list[dict[str, Any]],
+        previous_patch: dict[str, Any] | None = None,
+        rejected_reason: str | None = None,
+    ) -> dict[str, Any]:
         version = (previous_patch.get("version", 0) + 1) if previous_patch else 1
 
         # Return patch valid against Patch model
@@ -333,9 +334,9 @@ class ScriptedRed(RedAgent):
     async def next_attacks(
         self,
         round_id: str,
-        library: List[Attack],
-        history: List[Dict[str, Any]],
-    ) -> List[Attack]:
+        library: list[Attack],
+        history: list[dict[str, Any]],
+    ) -> list[Attack]:
         if not library:
             return []
 

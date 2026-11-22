@@ -3,11 +3,8 @@ tests/arena/test_rollback.py
 Unit tests for patch apply, rollback, regression verification, and incident reports.
 Owner: Nehaa (WS-C C4, C5, C6)
 """
-import asyncio
-import json
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+
 import pytest
 
 from arena.events import EventWriter
@@ -15,7 +12,7 @@ from arena.mocks import FakeSandbox, MockGate, MockTransport, ScriptedBlue, Scri
 from arena.referee import Referee
 from arena.reports import generate_reports
 from arena.rollback import apply_or_rollback
-from contracts.models import Event, Patch, Results
+from contracts.models import Event
 
 
 @pytest.fixture
@@ -208,7 +205,7 @@ async def test_reports_render_cleanly(base_referee):
 @pytest.mark.asyncio
 async def test_patch_events_validate_schema(base_referee):
     referee, _ = base_referee
-    results = await referee.run_full(run_id="run-patch-events", rollback_demo=True)
+    _results = await referee.run_full(run_id="run-patch-events", rollback_demo=True)
 
     events_r1 = referee.events.get_events_for_round("R1")
     patch_events = [e for e in events_r1 if e.get("type") == "patch"]

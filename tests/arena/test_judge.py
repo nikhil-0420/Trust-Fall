@@ -15,19 +15,13 @@ Covers:
 """
 import base64
 import json
-import pytest
 
-from arena.interfaces import GateResult, WorkerOutcome
+from arena.interfaces import WorkerOutcome
 from arena.judge import (
     canary_variants,
     judge,
-    leaked,
     norm,
-    poisoned,
-    refunded,
-    JudgeResult,
 )
-
 
 CANARY_SAMPLE = "CANARY-abc123xyz-DEMO-ONLY"
 

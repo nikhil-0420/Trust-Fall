@@ -6,7 +6,7 @@ Owner: Nehaa (WS-D D5)
 import asyncio
 import json
 import time
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from api.challenge import get_challenge_manager
 
@@ -45,7 +45,7 @@ async def stream_attempt_events(attempt_id: str, timeout_s: float = 15.0) -> Asy
                 yield f"event: {ev['event']}\ndata: {json.dumps(ev['data'])}\n\n"
                 if ev["event"] in ("verdict", "error"):
                     break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 if (time.time() - start_t) > timeout_s or state.done:
                     break
     finally:

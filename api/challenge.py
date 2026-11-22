@@ -7,19 +7,16 @@ Owner: Nehaa (WS-D D5, D6, D8)
 import asyncio
 import html
 import json
-import os
 import re
 import secrets
 import sqlite3
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from api.budget import get_budget
-from api.limits import get_rate_limiter
 from arena.factory import get_gate, get_sandbox, get_transport
-from arena.interfaces import Envelope, WorkerOutcome
+from arena.interfaces import Envelope
 from arena.judge import judge
 
 DB_PATH = Path("data/leaderboard.db")
@@ -87,7 +84,7 @@ def add_leaderboard_entry(
     attack_text: str,
 ):
     try:
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -102,7 +99,7 @@ def add_leaderboard_entry(
         pass
 
 
-def get_leaderboard_data() -> Dict[str, Any]:
+def get_leaderboard_data() -> dict[str, Any]:
     init_db()
     try:
         with sqlite3.connect(DB_PATH) as conn:
@@ -153,6 +150,11 @@ def get_leaderboard_data() -> Dict[str, Any]:
                     "break_rate": break_rate,
                     "by_level": by_level,
                 },
+                "stats": {
+                    "attempts_total": total_attempts,
+                    "breaks_total": total_breaks,
+                    "by_level": by_level,
+                },
                 "entries": entries,
             }
     except Exception:
@@ -176,7 +178,7 @@ def delete_leaderboard_entry(entry_id: str) -> bool:
 # ------------------------------------------------------------------------------
 # Presets Helper
 # ------------------------------------------------------------------------------
-def load_presets() -> List[Dict[str, Any]]:
+def load_presets() -> list[dict[str, Any]]:
     lib_path = Path("attacks/library.json")
     if not lib_path.exists():
         return []
@@ -234,16 +236,16 @@ def load_presets() -> List[Dict[str, Any]]:
 # Challenge Attempt State & Queue Management
 # ------------------------------------------------------------------------------
 class AttemptState:
-    def __init__(self, attempt_id: str, req_data: Dict[str, Any]):
+    def __init__(self, attempt_id: str, req_data: dict[str, Any]):
         self.attempt_id = attempt_id
         self.req_data = req_data
-        self.events: List[Dict[str, Any]] = []
-        self.verdict: Optional[Dict[str, Any]] = None
+        self.events: list[dict[str, Any]] = []
+        self.verdict: dict[str, Any] | None = None
         self.created_at = time.time()
-        self.subscribers: List[asyncio.Queue] = []
+        self.subscribers: list[asyncio.Queue] = []
         self.done = False
 
-    def emit_event(self, event_type: str, data: Dict[str, Any]):
+    def emit_event(self, event_type: str, data: dict[str, Any]):
         payload = {"event": event_type, "data": data}
         self.events.append(payload)
         for q in list(self.subscribers):
@@ -252,7 +254,7 @@ class AttemptState:
             except Exception:
                 pass
 
-    def set_verdict(self, verdict: Dict[str, Any]):
+    def set_verdict(self, verdict: dict[str, Any]):
         self.verdict = verdict
         self.emit_event("verdict", verdict)
         self.done = True
@@ -270,13 +272,13 @@ class ChallengeManager:
 
     def __init__(self):
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=10)
-        self.attempts: Dict[str, AttemptState] = {}
+        self.attempts: dict[str, AttemptState] = {}
         self._worker_running = False
 
     def get_queue_depth(self) -> int:
         return self.queue.qsize()
 
-    def get_attempt(self, attempt_id: str) -> Optional[AttemptState]:
+    def get_attempt(self, attempt_id: str) -> AttemptState | None:
         self._prune_old_attempts()
         return self.attempts.get(attempt_id)
 
@@ -288,7 +290,7 @@ class ChallengeManager:
         for k in expired:
             self.attempts.pop(k, None)
 
-    async def enqueue_attempt(self, req_data: Dict[str, Any]) -> str:
+    async def enqueue_attempt(self, req_data: dict[str, Any]) -> str:
         if self.queue.qsize() >= 10:
             raise ValueError("queue_full")
 
@@ -463,7 +465,7 @@ class ChallengeManager:
 
         try:
             outcome = await asyncio.wait_for(transport.send_ticket(env, timeout_s=45.0), timeout=45.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             state.set_error(reason="timeout")
             return
         except Exception:
@@ -510,7 +512,7 @@ class ChallengeManager:
             add_leaderboard_entry(state.attempt_id, nickname, level, goal, text)
 
 
-_challenge_manager: Optional[ChallengeManager] = None
+_challenge_manager: ChallengeManager | None = None
 
 
 def get_challenge_manager() -> ChallengeManager:

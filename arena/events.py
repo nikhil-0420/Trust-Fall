@@ -6,10 +6,10 @@ Owner: Nehaa (WS-C C2, C7)
 import asyncio
 import hashlib
 import json
-import os
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any
 
 from contracts.models import Event, EventType, RoundId
 
@@ -20,7 +20,7 @@ class TextCache:
     Key is sha256(f"{purpose}:{text}").
     """
 
-    def __init__(self, cache_dir: Union[str, Path] = "data/cache"):
+    def __init__(self, cache_dir: str | Path = "data/cache"):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -28,7 +28,7 @@ class TextCache:
         content = f"{purpose.strip()}:{text.strip()}"
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
-    def get(self, purpose: str, text: str) -> Optional[Dict[str, Any]]:
+    def get(self, purpose: str, text: str) -> dict[str, Any] | None:
         h = self._hash(purpose, text)
         cache_file = self.cache_dir / f"{h}.json"
         if cache_file.exists():
@@ -39,7 +39,7 @@ class TextCache:
                 return None
         return None
 
-    def set(self, purpose: str, text: str, data: Dict[str, Any]) -> None:
+    def set(self, purpose: str, text: str, data: dict[str, Any]) -> None:
         h = self._hash(purpose, text)
         cache_file = self.cache_dir / f"{h}.json"
         try:
@@ -59,8 +59,8 @@ class EventWriter:
     def __init__(
         self,
         run_id: str,
-        base_dir: Union[str, Path] = "data/runs",
-        cache_dir: Union[str, Path] = "data/cache",
+        base_dir: str | Path = "data/runs",
+        cache_dir: str | Path = "data/cache",
     ):
         self.run_id = run_id
         self.base_dir = Path(base_dir)
@@ -69,7 +69,7 @@ class EventWriter:
 
         self.cache = TextCache(cache_dir)
         self.seq = 0
-        self.subscribers: List[Callable[[Event], Any]] = []
+        self.subscribers: list[Callable[[Event], Any]] = []
 
         # Real and mock counters
         self.llm_calls = 0
@@ -143,7 +143,7 @@ class EventWriter:
 
         return event
 
-    def get_events_for_round(self, round_id: RoundId) -> List[Dict[str, Any]]:
+    def get_events_for_round(self, round_id: RoundId) -> list[dict[str, Any]]:
         file_path = self.run_dir / f"events-{round_id}.jsonl"
         if not file_path.exists():
             return []

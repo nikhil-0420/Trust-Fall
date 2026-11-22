@@ -5,7 +5,6 @@ Owner: Nehaa (WS-D D7)
 """
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional, Tuple
 
 from api.budget import get_budget
 
@@ -30,8 +29,8 @@ class RateLimiter:
         self.ip_limit = ip_limit
         self.lock = threading.Lock()
         self.date_str = self._current_ist_date()
-        self.session_counts: Dict[str, int] = {}
-        self.ip_counts: Dict[str, int] = {}
+        self.session_counts: dict[str, int] = {}
+        self.ip_counts: dict[str, int] = {}
 
     def _current_ist_date(self) -> str:
         return datetime.now(IST).strftime("%Y-%m-%d")
@@ -45,9 +44,9 @@ class RateLimiter:
 
     def check_limits(
         self,
-        session_id: Optional[str],
-        client_ip: Optional[str],
-    ) -> Tuple[bool, Optional[str], int]:
+        session_id: str | None,
+        client_ip: str | None,
+    ) -> tuple[bool, str | None, int]:
         """
         Check rate limits. Returns (allowed: bool, reason: Optional[str], retry_after: int).
         """
@@ -84,7 +83,7 @@ class RateLimiter:
             return True, None, 0
 
 
-_limiter_instance: Optional[RateLimiter] = None
+_limiter_instance: RateLimiter | None = None
 
 
 def get_rate_limiter() -> RateLimiter:

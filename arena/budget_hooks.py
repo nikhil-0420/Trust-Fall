@@ -3,8 +3,7 @@ arena/budget_hooks.py
 Budget governor integration wrapping api.budget.Budget.
 Owner: Nehaa (WS-C C2, WS-D D4)
 """
-from typing import Optional
-from api.budget import Budget, get_budget
+from api.budget import Budget
 
 
 class LocalBudget(Budget):

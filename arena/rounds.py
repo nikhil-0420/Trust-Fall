@@ -4,15 +4,14 @@ Execution logic for individual rounds (R0, R1, R2).
 Owner: Nehaa (WS-C C2)
 """
 import secrets
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from arena.benign import run_benign_suite
-from arena.interfaces import Envelope, ProfileType, Transport, WorkerOutcome
+from arena.interfaces import Envelope, ProfileType, WorkerOutcome
 from arena.judge import judge
 from contracts.models import (
     Attack,
     BenignSummary,
-    Event,
     RoundAttackResult,
     RoundId,
     RoundResult,
@@ -29,7 +28,7 @@ async def execute_round(
     referee: Any,
     round_id: RoundId,
     profile: ProfileType,
-    attacks: List[Attack],
+    attacks: list[Attack],
     patch_version: int = 0,
     benign_count: int = 10,
 ) -> RoundResult:
@@ -39,7 +38,7 @@ async def execute_round(
     2. Run benign test suite.
     3. Calculate ASR metrics and emit round_summary.
     """
-    attack_results: List[RoundAttackResult] = []
+    attack_results: list[RoundAttackResult] = []
     succeeded_known = 0
     known_valid = 0
     succeeded_heldout = 0
@@ -90,7 +89,7 @@ async def execute_round(
         )
 
         # 3. Send ticket with 45s timeout and single retry on error
-        outcome: Optional[WorkerOutcome] = None
+        outcome: WorkerOutcome | None = None
         for attempt in range(2):
             try:
                 outcome = await referee.transport.send_ticket(env, timeout_s=45.0)

@@ -12,4 +12,5 @@
 | H5 | DONE | pytest -q (97 passed) | f7e2436 | H6 | Challenge mode POST /api/break, SSE streaming, presets, SQLite leaderboard, api_smoke extended |
 | H6 | DONE | pytest -q (103 passed) | 6c5e6b6 | H7 | AdaptiveRed adversary logic, dynamic category shifting, mutation safety filter, referee wired |
 | H7 | DONE | pytest -q (107 passed) | 6373113 | H9 | Dockerfile, render.yaml, HF_SPACES.md, tunnel.py, measure_limits.py, DEPLOY.md, MANUAL_STEPS |
+| H9 | DONE | pytest -q (125 passed) | pending | FINISHED | Hardening, frontend contract conformance, load/abuse tests, security review, clean secret scan, full README, SUBMISSION_NOTES |
 

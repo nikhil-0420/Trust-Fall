@@ -3,13 +3,12 @@ tests/api/test_api.py
 Tests for FastAPI endpoints, LyzrGate fail-closed logic, Budget governor, and rate limits.
 Owner: Nehaa (WS-D D2, D3, D4, D7)
 """
-import json
 import os
-from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
-from api.budget import Budget, BudgetExceeded
+from api.budget import Budget
 from api.gate import LyzrGate
 from api.limits import RateLimiter
 from api.main import app

@@ -6,17 +6,14 @@ Owner: Nehaa (WS-D D5, D6, D8)
 import asyncio
 import json
 import os
-import re
 from pathlib import Path
-import pytest
+
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from api.budget import get_budget
-from api.challenge import get_challenge_manager, get_leaderboard_data
-from api.limits import get_rate_limiter
 from api.main import app
-from arena.mocks import FakeSandbox
 
 
 @pytest.fixture

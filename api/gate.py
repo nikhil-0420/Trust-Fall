@@ -7,7 +7,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
+
 import httpx
 
 from api.budget import get_budget
@@ -25,7 +26,7 @@ class LyzrGate(Gate):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         cache_dir: str = "data/cache/gate",
         timeout_s: float = 5.0,
     ):
@@ -38,7 +39,7 @@ class LyzrGate(Gate):
     def _hash(self, text: str) -> str:
         return hashlib.sha256(text.strip().encode("utf-8")).hexdigest()
 
-    def _read_cache(self, text_hash: str) -> Optional[Dict[str, Any]]:
+    def _read_cache(self, text_hash: str) -> dict[str, Any] | None:
         cf = self.cache_dir / f"{text_hash}.json"
         if cf.exists():
             try:
@@ -48,7 +49,7 @@ class LyzrGate(Gate):
                 return None
         return None
 
-    def _write_cache(self, text_hash: str, data: Dict[str, Any]) -> None:
+    def _write_cache(self, text_hash: str, data: dict[str, Any]) -> None:
         cf = self.cache_dir / f"{text_hash}.json"
         try:
             with open(cf, "w", encoding="utf-8") as f:

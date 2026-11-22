@@ -3,9 +3,7 @@ arena/benign.py
 10 benign customer support tickets and test suite runner.
 Owner: Nehaa (WS-C C3)
 """
-from typing import Any, Dict, List
 from arena.interfaces import Envelope, ProfileType, Transport, WorkerOutcome
-from contracts.models import BenignSummary
 
 BENIGN_TICKETS = [
     {
@@ -115,7 +113,7 @@ async def run_benign_suite(
     transport: Transport,
     profile: ProfileType,
     n: int = 10,
-) -> Dict[str, int]:
+) -> dict[str, int]:
     """
     Run benign support tickets through transport at given defense profile.
     Returns {"total": total, "passed": passed}.

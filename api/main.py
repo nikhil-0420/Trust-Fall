@@ -4,14 +4,14 @@ FastAPI application for Trust Fall arena, challenge mode, SSE streaming,
 gate service, presets, and leaderboard.
 Owner: Nehaa (WS-D D2, D3, D5, D6, D8)
 """
-import asyncio
 import glob
 import hmac
 import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
+
 from fastapi import FastAPI, Header, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -27,7 +27,7 @@ from api.challenge import (
 from api.gate import LyzrGate
 from api.limits import get_rate_limiter
 from api.sse import stream_attempt_events
-from arena.factory import get_sandbox, get_transport
+from arena.factory import get_sandbox
 
 app = FastAPI(
     title="Trust Fall Arena API",
@@ -78,7 +78,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 # ------------------------------------------------------------------------------
 class ScreenRequest(BaseModel):
     text: str = Field(..., max_length=500)
-    stage: Optional[str] = "inbound"
+    stage: str | None = "inbound"
 
 
 class ScreenResponse(BaseModel):
@@ -91,22 +91,22 @@ class BreakRequest(BaseModel):
     level: Literal["L0", "L1", "L2"]
     goal: Literal["leak", "poison", "refund"]
     text: str
-    nickname: Optional[str] = None
-    share: Optional[bool] = False
-    preset_id: Optional[str] = None
-    website: Optional[str] = None  # Honeypot field
+    nickname: str | None = None
+    share: bool | None = False
+    preset_id: str | None = None
+    website: str | None = None  # Honeypot field
 
 
 # ------------------------------------------------------------------------------
 # Health & Status Endpoints
 # ------------------------------------------------------------------------------
 @app.get("/api/health")
-async def health() -> Dict[str, str]:
+async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @app.get("/api/status")
-async def get_status() -> Dict[str, Any]:
+async def get_status() -> dict[str, Any]:
     use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in {"1", "true", "yes"}
 
     worker_healthy = True
@@ -138,9 +138,9 @@ async def get_status() -> Dict[str, Any]:
         "worker": worker_status,
         "queue_depth": challenge_mgr.get_queue_depth(),
         "levels": {
-            "L0": "Baseline",
-            "L1": "Lyzr gate",
-            "L2": "Patched",
+            "L0": {"name": "Baseline", "block_rate": 0.0, "latency_ms": 1200},
+            "L1": {"name": "Lyzr gate", "block_rate": 0.5, "latency_ms": 1800},
+            "L2": {"name": "Patched", "block_rate": 0.9, "latency_ms": 2100},
         },
         "budget": b_status,
     }
@@ -150,7 +150,7 @@ async def get_status() -> Dict[str, Any]:
 # Results & Replay Endpoints
 # ------------------------------------------------------------------------------
 @app.get("/api/results")
-async def get_results() -> Dict[str, Any]:
+async def get_results() -> dict[str, Any]:
     results_file = Path("data/results.json")
     if not results_file.exists():
         results_file = Path("data/mock/results.json")
@@ -166,7 +166,7 @@ async def get_results() -> Dict[str, Any]:
 
 
 @app.get("/api/events/{round_id}")
-async def get_events(round_id: str) -> List[Dict[str, Any]]:
+async def get_events(round_id: str) -> list[dict[str, Any]]:
     r = round_id.upper()
     if r not in ("R0", "R1", "R2", "CH"):
         raise HTTPException(
@@ -219,19 +219,19 @@ async def get_report(round_id: str):
 # Presets & Leaderboard
 # ------------------------------------------------------------------------------
 @app.get("/api/attacks/presets")
-async def get_presets() -> List[Dict[str, Any]]:
+async def get_presets() -> list[dict[str, Any]]:
     return load_presets()
 
 
 @app.get("/api/leaderboard")
-async def get_leaderboard() -> Dict[str, Any]:
+async def get_leaderboard() -> dict[str, Any]:
     return get_leaderboard_data()
 
 
 @app.delete("/api/admin/leaderboard/{entry_id}")
 async def admin_delete_leaderboard(
     entry_id: str,
-    x_internal_token: Optional[str] = Header(None, alias="X-Internal-Token"),
+    x_internal_token: str | None = Header(None, alias="X-Internal-Token"),
 ):
     expected_token = os.getenv("INTERNAL_TOKEN", "").strip()
     if not expected_token or not x_internal_token or not hmac.compare_digest(x_internal_token, expected_token):
@@ -256,7 +256,7 @@ async def admin_delete_leaderboard(
 async def submit_break(
     req: BreakRequest,
     request: Request,
-    x_session_id: Optional[str] = Header(None, alias="X-Session-Id"),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
 ):
     # 1. Honeypot check
     if req.website and req.website.strip():
@@ -379,7 +379,7 @@ async def stream_break_events(attempt_id: str):
 
 
 @app.get("/api/break/{attempt_id}")
-async def get_break_verdict(attempt_id: str) -> Dict[str, Any]:
+async def get_break_verdict(attempt_id: str) -> dict[str, Any]:
     challenge_mgr = get_challenge_manager()
     state = challenge_mgr.get_attempt(attempt_id)
     if not state:
@@ -389,9 +389,18 @@ async def get_break_verdict(attempt_id: str) -> Dict[str, Any]:
         )
 
     if not state.done or not state.verdict:
-        return {"status": "running", "attempt_id": attempt_id}
+        return {
+            "status": "running",
+            "attempt_id": attempt_id,
+            "level": state.req_data.get("level"),
+            "goal": state.req_data.get("goal"),
+        }
 
     res = dict(state.verdict)
+    res["attempt_id"] = attempt_id
+    res["status"] = "done"
+    res["level"] = state.req_data.get("level")
+    res["goal"] = state.req_data.get("goal")
     if state.req_data.get("share"):
         res["text"] = state.req_data.get("text")
     return res
@@ -406,7 +415,7 @@ _gate_instance = LyzrGate()
 @app.post("/internal/screen", response_model=ScreenResponse)
 async def internal_screen(
     req: ScreenRequest,
-    x_internal_token: Optional[str] = Header(None, alias="X-Internal-Token"),
+    x_internal_token: str | None = Header(None, alias="X-Internal-Token"),
 ) -> ScreenResponse:
     expected_token = os.getenv("INTERNAL_TOKEN", "").strip()
 

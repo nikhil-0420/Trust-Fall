@@ -3,14 +3,12 @@ tests/arena/test_referee.py
 Unit and integration tests for Referee, rounds, benign suite, and events.
 Owner: Nehaa (WS-C C2, C3, C7)
 """
-import asyncio
 import json
 from pathlib import Path
-from typing import List
-import pytest
-import jsonschema
 
-from arena.benign import run_benign_suite
+import jsonschema
+import pytest
+
 from arena.events import EventWriter, TextCache
 from arena.interfaces import Envelope, WorkerOutcome
 from arena.mocks import (
@@ -21,7 +19,7 @@ from arena.mocks import (
     ScriptedRed,
 )
 from arena.referee import Referee
-from contracts.models import Attack, Event, Results
+from contracts.models import Attack, Results
 
 
 @pytest.fixture
@@ -46,7 +44,7 @@ def test_env(tmp_path):
 
 @pytest.mark.asyncio
 async def test_full_mock_run_schema_validation(test_env):
-    referee, tmp_path = test_env
+    referee, _tmp_path = test_env
     results = await referee.run_full(run_id="run-test-schema", attacks_per_round=4)
 
     # 1. Pydantic validation

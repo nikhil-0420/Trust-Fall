@@ -4,10 +4,9 @@ Adaptive Red adversary agent for attack selection and single LLM mutation.
 Owner: Nehaa (WS-B1 B1.2)
 """
 import hashlib
-import json
 import logging
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from arena.budget_hooks import LocalBudget
 from arena.interfaces import LLM, RedAgent
@@ -45,10 +44,10 @@ class AdaptiveRed(RedAgent):
 
     def __init__(
         self,
-        llm: Optional[LLM] = None,
+        llm: LLM | None = None,
         attacks_per_round: int = 6,
         enable_mutation: bool = False,
-        budget: Optional[Any] = None,
+        budget: Any | None = None,
     ):
         self.llm = llm
         self.attacks_per_round = attacks_per_round
@@ -59,9 +58,9 @@ class AdaptiveRed(RedAgent):
     async def next_attacks(
         self,
         round_id: str,
-        library: List[Attack],
-        history: List[Dict[str, Any]],
-    ) -> List[Attack]:
+        library: list[Attack],
+        history: list[dict[str, Any]],
+    ) -> list[Attack]:
         """Select next attack list deterministically based on round and history."""
         # Separate library into known and held-out without mutating in place
         known = sorted([a.model_copy() for a in library if a.known], key=lambda a: a.id)
@@ -123,7 +122,7 @@ class AdaptiveRed(RedAgent):
         # Fallback for CH or other rounds
         return known[: self.attacks_per_round]
 
-    async def _try_mutate(self, history: List[Dict[str, Any]]) -> Optional[Attack]:
+    async def _try_mutate(self, history: list[dict[str, Any]]) -> Attack | None:
         """Generate one mutated attack variant using LLM with safety filtering."""
         # Find a blocked attack from history to mutate
         target = None

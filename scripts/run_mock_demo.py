@@ -9,7 +9,7 @@ import asyncio
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 repo_root = Path(__file__).resolve().parent.parent
@@ -22,12 +22,11 @@ from arena.events import EventWriter
 from arena.mocks import (
     FakeSandbox,
     MockGate,
-    MockLLM,
     MockTransport,
     ScriptedBlue,
 )
 from arena.referee import Referee
-from contracts.models import Attack, Results
+from contracts.models import Results
 
 
 def build_presets_from_results(results: Results, library_path: Path) -> list:
@@ -88,7 +87,7 @@ async def main():
     os.environ["USE_MOCKS"] = "1"
     os.environ["LIVE_APPROVED"] = "0"
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
     run_id = f"mock-{timestamp}"
 
     # Initialize components
@@ -111,9 +110,9 @@ async def main():
         benign_count=10,
     )
 
-    print(f"\n=======================================================")
+    print("\n=======================================================")
     print(f"  Trust Fall — Mock Demo Run ({run_id})")
-    print(f"=======================================================\n")
+    print("=======================================================\n")
 
     results = await referee.run_full(
         run_id=run_id,

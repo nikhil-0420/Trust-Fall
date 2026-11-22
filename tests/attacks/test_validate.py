@@ -12,14 +12,13 @@ Covers:
 """
 import copy
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 
 from attacks.validate import (
     validate_attacks,
     validate_library_file,
-    MAX_TEXT_LEN,
-    MIN_HELDOUT,
 )
 
 

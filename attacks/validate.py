@@ -16,7 +16,7 @@ Checks performed:
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any
 
 # Ensure repo root is on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -44,17 +44,17 @@ MAX_TEXT_LEN = 400
 MIN_HELDOUT = 6
 
 
-def validate_attacks(attacks_data: List[Union[Dict[str, Any], Attack]]) -> List[str]:
+def validate_attacks(attacks_data: list[dict[str, Any] | Attack]) -> list[str]:
     """
     Validate a list of attack dictionaries or Attack instances.
     Returns a list of error strings. Empty list indicates full validity.
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     if not isinstance(attacks_data, list):
         return ["Attack data root must be a list."]
 
-    parsed_attacks: List[Attack] = []
+    parsed_attacks: list[Attack] = []
     seen_ids = set()
 
     for i, item in enumerate(attacks_data):
@@ -119,7 +119,7 @@ def validate_attacks(attacks_data: List[Union[Dict[str, Any], Attack]]) -> List[
     return errors
 
 
-def validate_library_file(file_path: Union[str, Path] = "attacks/library.json") -> List[str]:
+def validate_library_file(file_path: str | Path = "attacks/library.json") -> list[str]:
     """
     Load and validate an attack library file from disk.
     """

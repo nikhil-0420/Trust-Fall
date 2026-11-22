@@ -5,9 +5,9 @@ Owner: Nehaa (WS-C C2, C4, C6)
 """
 import json
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from arena.events import EventWriter
 from arena.interfaces import BlueAgent, Gate, RedAgent, Sandbox, Transport
@@ -18,8 +18,6 @@ from contracts.models import (
     Attack,
     BudgetSummary,
     ContagionSummary,
-    Patch,
-    PatchEntry,
     Results,
     RoundId,
     RoundResult,
@@ -40,7 +38,7 @@ class Referee:
         red: RedAgent,
         blue: BlueAgent,
         events: EventWriter,
-        budget: Optional[Any] = None,
+        budget: Any | None = None,
         benign_count: int = 10,
     ):
         self.transport = transport
@@ -62,7 +60,7 @@ class Referee:
         self,
         round_id: RoundId,
         profile: str,
-        attacks: List[Attack],
+        attacks: list[Attack],
         patch_version: int = 0,
     ) -> RoundResult:
         """Run a single evaluation round."""
@@ -77,9 +75,9 @@ class Referee:
 
     async def run_full(
         self,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
         attacks_per_round: int = 6,
-        library_path: Union[str, Path] = "attacks/library.json",
+        library_path: str | Path = "attacks/library.json",
         rollback_demo: bool = False,
     ) -> Results:
         """
@@ -87,7 +85,7 @@ class Referee:
         Persists results to data/runs/<run_id>/results.json and writes reports.
         """
         if not run_id:
-            run_id = f"run-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+            run_id = f"run-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
 
         self.events.run_id = run_id
         self.events.run_dir = self.events.base_dir / run_id
@@ -188,7 +186,7 @@ class Referee:
 
         results = Results(
             run_id=run_id,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             models=models,
             rounds=[r0_res, r1_res, r2_res],
             patches=patches_recorded,

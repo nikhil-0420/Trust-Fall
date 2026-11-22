@@ -7,16 +7,16 @@ import asyncio
 import json
 import os
 import threading
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
 
 class BudgetExceeded(Exception):
     """Raised when daily API budget threshold (80%) is exceeded or rate limit persists."""
-    pass
 
 
 class Budget:
@@ -28,14 +28,14 @@ class Budget:
     def __init__(
         self,
         filepath: str = "data/budget.json",
-        llm_cap: Optional[int] = None,
-        lyzr_cap: Optional[int] = None,
+        llm_cap: int | None = None,
+        lyzr_cap: int | None = None,
         threshold: float = 0.8,
     ):
         self.filepath = Path(filepath)
         self.threshold = threshold
         self.lock = threading.Lock()
-        self.listeners: List[Callable[[Dict[str, int]], Any]] = []
+        self.listeners: list[Callable[[dict[str, int]], Any]] = []
 
         raw_llm = os.getenv("LLM_DAILY_CAP", "").strip()
         default_llm = int(raw_llm) if raw_llm.isdigit() else 200
@@ -94,7 +94,7 @@ class Budget:
         except Exception:
             pass
 
-    def add_listener(self, callback: Callable[[Dict[str, int]], Any]) -> None:
+    def add_listener(self, callback: Callable[[dict[str, int]], Any]) -> None:
         if callback not in self.listeners:
             self.listeners.append(callback)
 
@@ -147,7 +147,7 @@ class Budget:
             self._save_locked()
         self._notify()
 
-    def status(self) -> Dict[str, int]:
+    def status(self) -> dict[str, int]:
         with self.lock:
             return {
                 "llm_used": self.llm_used,
@@ -183,7 +183,7 @@ async def call_with_gemini_retry(
     raise BudgetExceeded(f"Call failed: {last_err}")
 
 
-_budget_instance: Optional[Budget] = None
+_budget_instance: Budget | None = None
 
 
 def get_budget() -> Budget:

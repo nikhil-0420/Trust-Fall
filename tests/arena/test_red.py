@@ -6,10 +6,10 @@ Owner: Nehaa (WS-B1 B1.2)
 import copy
 import json
 from pathlib import Path
+
 import pytest
 
 from agents.red import AdaptiveRed
-from arena.budget_hooks import LocalBudget
 from arena.interfaces import LLM
 from contracts.models import Attack
 

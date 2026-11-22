@@ -89,6 +89,29 @@ def main():
         except Exception as e:
             print(f"Warning: could not scan {file_path}: {e}", file=sys.stderr)
 
+    if "--history" in sys.argv:
+        try:
+            log_proc = subprocess.run(["git", "log", "-p", "--all"], capture_output=True, text=True, errors="ignore")
+            current_commit = "unknown"
+            current_file = "unknown"
+            for line in log_proc.stdout.splitlines():
+                if line.startswith("commit "):
+                    current_commit = line.split()[1][:8]
+                elif line.startswith("diff --git "):
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        current_file = parts[3].lstrip("b/")
+                elif line.startswith("+") and not line.startswith("+++"):
+                    added_line = line[1:]
+                    if current_file in {"scripts/secret_scan.py", ".env.example"}:
+                        continue
+                    for pat in REGEX_PATTERNS:
+                        if pat.search(added_line):
+                            all_hits.append((f"{current_file} (commit {current_commit})", 0, "Matched secret regex in git history"))
+                            break
+        except Exception as e:
+            print(f"Warning: could not scan git history: {e}", file=sys.stderr)
+
     if all_hits:
         print("[!] SECRET SCAN FAILED: Potential secrets detected!", file=sys.stderr)
         for fn, line, reason in all_hits:

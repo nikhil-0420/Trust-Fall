@@ -5,9 +5,8 @@ Owner: Nehaa (WS-C C6)
 """
 import json
 from pathlib import Path
-from typing import List, Union
 
-from contracts.models import Results, RoundResult
+from contracts.models import Results
 
 
 def _determine_stopped_by(outcome: str, round_id: str, gate_blocked: bool) -> str:
@@ -22,9 +21,9 @@ def _determine_stopped_by(outcome: str, round_id: str, gate_blocked: bool) -> st
 
 def generate_reports(
     results: Results,
-    output_dir: Union[str, Path] = "data/reports",
+    output_dir: str | Path = "data/reports",
     cache_hits: int = 0,
-) -> List[Path]:
+) -> list[Path]:
     """
     Generate markdown incident reports data/reports/R0.md, R1.md, R2.md from Results.
     """

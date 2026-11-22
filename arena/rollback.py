@@ -5,7 +5,7 @@ Owner: Nehaa (WS-C C4, C5)
 """
 import asyncio
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from arena.benign import run_benign_suite
 from contracts.models import Patch, PatchEntry
@@ -15,17 +15,17 @@ from contracts.patch_validate import validate_patch
 @dataclass
 class PatchDecision:
     accepted: bool
-    active_patch: Optional[Patch]
+    active_patch: Patch | None
     active_version: int
-    history: List[PatchEntry]
+    history: list[PatchEntry]
 
 
 async def apply_or_rollback(
     referee: Any,
-    incident_log: List[Dict[str, Any]],
+    incident_log: list[dict[str, Any]],
     r0_benign_rate: float,
     rollback_demo: bool = False,
-    previous_patch: Optional[Dict[str, Any]] = None,
+    previous_patch: dict[str, Any] | None = None,
 ) -> PatchDecision:
     """
     Attempt to install a defender patch:
@@ -36,7 +36,7 @@ async def apply_or_rollback(
     5. Rule: Accept if benign pass rate >= 0.90 AND drop vs R0 benign rate <= 10 percentage points.
     6. If regression fails: Roll back to previous patch, emit rejected/rolled_back event, retry.
     """
-    history: List[PatchEntry] = []
+    history: list[PatchEntry] = []
     prev_patch_dict = previous_patch
     prev_patch_version = previous_patch.get("version", 0) if previous_patch else 0
 
@@ -111,8 +111,8 @@ async def apply_or_rollback(
         prev_patch_version = demo_patch_data["version"]
 
     # 2. Blue proposal attempts (maximum 2)
-    rejected_reason: Optional[str] = None
-    active_patch: Optional[Patch] = None
+    rejected_reason: str | None = None
+    active_patch: Patch | None = None
     active_version: int = prev_patch_version
 
     for attempt in range(1, 3):
