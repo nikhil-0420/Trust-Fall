@@ -128,9 +128,22 @@ class Agent37Sandbox(Sandbox):
                     if resp.status_code == 200:
                         status = resp.json().get("status")
                         if status == "running":
-                            # Ensure worker process is relaunched post-restart
+                            # Ensure worker process is relaunched post-restart (Phase C10 c: Idempotent launch & verify exactly 1 process)
+                            idempotent_cmd = (
+                                "cd /home/node && python3 -c \""
+                                "import os, subprocess, signal\n"
+                                "pids = [int(p) for p in subprocess.getoutput('pgrep -f worker_band.py').split() if p.isdigit()]\n"
+                                "if not pids:\n"
+                                "    subprocess.Popen(['python3', '-u', 'worker_band.py'], cwd='/home/node', stdout=open('/home/node/worker.log', 'a'), stderr=subprocess.STDOUT)\n"
+                                "elif len(pids) > 1:\n"
+                                "    pids.sort()\n"
+                                "    for p in pids[:-1]:\n"
+                                "        try: os.kill(p, signal.SIGKILL)\n"
+                                "        except Exception: pass\n"
+                                "\""
+                            )
                             try:
-                                await self.exec_command("cd /home/node && (python3 -u worker_band.py > worker.log 2>&1 &) || true")
+                                await self.exec_command(idempotent_cmd)
                             except Exception:
                                 pass
                             return

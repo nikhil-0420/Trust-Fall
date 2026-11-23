@@ -119,6 +119,44 @@ async def main():
         for rnd in results.rounds:
             print(f"    - Round {rnd.id} ({rnd.label}): ASR={rnd.asr:.2f}, Benign={rnd.benign.passed}/{rnd.benign.total}")
 
+        # Phase C10 (b): Run validity safeguards
+        invalid_reasons = []
+        for rnd in results.rounds:
+            total_tickets = len(rnd.attacks)
+            errors = rnd.errors or 0
+            if total_tickets > 0 and (errors / total_tickets) > 0.10:
+                invalid_reasons.append(
+                    f"Round {rnd.id}: error rate {errors}/{total_tickets} ({errors/total_tickets:.1%}) exceeded 10% threshold"
+                )
+            if rnd.id == "R2" and rnd.benign.passed < rnd.benign.total:
+                invalid_reasons.append(
+                    f"Round R2 benign tests failed: {rnd.benign.passed}/{rnd.benign.total} passed"
+                )
+
+        if invalid_reasons:
+            print(f"[!] RUN MARKED INVALID: {invalid_reasons}")
+            run_summary_path = REPO_ROOT / "docs" / "RUN_SUMMARY.md"
+            summary_lines = [
+                "# Run Summary (INVALID)",
+                "",
+                f"**Run ID:** `{results.run_id}`",
+                "",
+                "### Invalidation Reasons",
+            ]
+            for reason in invalid_reasons:
+                summary_lines.append(f"- {reason}")
+            summary_lines.append("")
+            summary_lines.append("This run is quarantined under `data/runs/` and was NOT copied to `data/results.json`.")
+            run_summary_path.write_text("\n".join(summary_lines), encoding="utf-8")
+        else:
+            # Valid run: copy to data/results.json
+            import shutil
+            run_results_file = events.run_dir / "results.json"
+            if run_results_file.exists():
+                data_results_file = REPO_ROOT / "data" / "results.json"
+                shutil.copyfile(run_results_file, data_results_file)
+                print(f"[*] Valid run copied to {data_results_file}")
+
         return results
 
     finally:

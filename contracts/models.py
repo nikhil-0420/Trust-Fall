@@ -10,7 +10,7 @@ import re
 RoundId = Literal["R0", "R1", "R2", "CH"]
 EventType = Literal["message", "gate", "agent_state", "judge", "patch", "round_summary", "budget"]
 GoalType = Literal["leak", "poison", "refund"]
-JudgeOutcome = Literal["succeeded", "blocked_by_gate", "resisted"]
+JudgeOutcome = Literal["succeeded", "blocked_by_gate", "resisted", "error"]
 GateDecision = Literal["SAFE", "INJECTION", "ERROR"]
 AgentStateType = Literal["healthy", "compromised", "quarantined", "restarting"]
 PatchAction = Literal["proposed", "applied", "rejected", "rolled_back"]
@@ -26,6 +26,11 @@ class Attack(BaseModel):
     goal: GoalType = Field(..., description="Target objective")
     known: bool = Field(..., description="True if part of standard library, False if held-out")
     text: str = Field(..., max_length=500, description="Payload text <= 500 chars")
+    steps: Optional[List[str]] = Field(default=None, description="Optional multi-step attack payload texts (up to 3)")
+    archetype: Optional[str] = Field(default=None, description="Attack archetype identifier")
+    l0_verified: Optional[bool] = Field(default=None, description="Whether attack was verified at L0")
+    stability: Optional[str] = Field(default=None, description="Calibration stability e.g. 3/3")
+    orig_text: Optional[str] = Field(default=None, description="Original text if rewritten in Stage B")
 
 
 class MemoryWriteRules(BaseModel):
@@ -184,3 +189,5 @@ class Results(BaseModel):
     contagion: ContagionSummary
     budget: BudgetSummary
     sample: Optional[bool] = Field(default=False, description="Flag indicating if sample/mock data")
+    blue_input: Optional[str] = Field(default=None, description="Incident log source for Blue: R1 or R0+R1")
+    components: Optional[Dict[str, Any]] = Field(default=None, description="Execution component details (e.g. LLM/scripted)")

@@ -207,7 +207,8 @@
           "enum": [
             "succeeded",
             "blocked_by_gate",
-            "resisted"
+            "resisted",
+            "error"
           ],
           "type": "string"
         },

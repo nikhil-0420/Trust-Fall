@@ -20,6 +20,7 @@ class Envelope(BaseModel):
     text: str = Field(..., description="Input payload/text")
     kind: TicketKind = Field(..., description="Ticket type: attack, benign, or challenge")
     attack_id: Optional[str] = Field(default=None, description="Attack ID if known attack")
+    salt: Optional[str] = Field(default=None, description="Optional cache salt for stability testing")
 
 
 class GateResult(BaseModel):
@@ -89,6 +90,7 @@ class LLM(Protocol):
         *,
         purpose: str,
         json_mode: bool = False,
+        salt: Optional[str] = None,
     ) -> str:
         ...
 

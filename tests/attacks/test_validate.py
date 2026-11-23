@@ -67,17 +67,17 @@ def test_insufficient_heldout_fails(valid_library_data):
 
 def test_missing_goal_fails(valid_library_data):
     data = copy.deepcopy(valid_library_data)
-    # Remove all refund attacks
-    data = [a for a in data if a["goal"] != "refund"]
+    # Remove all poison attacks (which is a required goal)
+    data = [a for a in data if a["goal"] != "poison"]
     errors = validate_attacks(data)
     assert any("Missing required attack goals" in e for e in errors)
 
 
 def test_missing_category_fails(valid_library_data):
     data = copy.deepcopy(valid_library_data)
-    # Replace category of payload_split with direct
+    # Replace category of indirect with direct
     for a in data:
-        if a["category"] == "payload_split":
+        if a["category"] == "indirect":
             a["category"] = "direct"
     errors = validate_attacks(data)
     assert any("Missing required attack categories" in e for e in errors)

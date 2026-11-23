@@ -78,81 +78,120 @@ async def execute_round(
         # 1. Reset state with fresh random canary
         canary = generate_canary()
         await referee.sandbox.reset_state(canary)
+        if hasattr(referee.transport, "reset_state"):
+            await referee.transport.reset_state(canary)
 
-        # 2. Build Envelope
-        env = Envelope(
-            ticket_id=f"T-{round_id}-{attack.id}",
-            profile=profile,
-            text=attack.text,
-            kind="attack",
-            attack_id=attack.id,
-        )
+        # 2. Multi-step support (Phase C3): sequential delivery without resetting state
+        steps = attack.steps if (attack.steps and len(attack.steps) > 0) else [attack.text]
+        step_outcomes: list[WorkerOutcome] = []
+        stopped_by_gate = False
 
-        # 3. Send ticket with 45s timeout and single retry on error
-        outcome: WorkerOutcome | None = None
-        for attempt in range(2):
-            try:
-                outcome = await referee.transport.send_ticket(env, timeout_s=45.0)
-                if not outcome.error:
-                    break
-            except Exception as e:
-                if attempt == 1:
-                    outcome = WorkerOutcome(
-                        ticket_id=env.ticket_id,
-                        outbound_messages=[],
-                        blocked_by_gate=False,
-                        latency_ms=0,
-                        llm_calls=0,
-                        error=str(e),
-                    )
-
-        if outcome is None:
-            outcome = WorkerOutcome(
-                ticket_id=env.ticket_id,
-                outbound_messages=[],
-                blocked_by_gate=False,
-                latency_ms=0,
-                llm_calls=0,
-                error="Transport returned None",
+        for step_idx, step_text in enumerate(steps):
+            step_ticket_id = (
+                f"T-{round_id}-{attack.id}-s{step_idx+1}"
+                if len(steps) > 1
+                else f"T-{round_id}-{attack.id}"
+            )
+            env = Envelope(
+                ticket_id=step_ticket_id,
+                profile=profile,
+                text=step_text,
+                kind="attack",
+                attack_id=attack.id,
             )
 
-        # Record LLM/Gate spend in budget if applicable
-        if referee.budget:
-            if outcome.llm_calls > 0:
-                referee.budget.spend("llm", outcome.llm_calls)
-            if outcome.gate:
-                referee.budget.spend("lyzr", 1)
+            # Send ticket with 45s timeout and single retry on error
+            step_outcome: WorkerOutcome | None = None
+            for attempt in range(2):
+                try:
+                    step_outcome = await referee.transport.send_ticket(env, timeout_s=45.0)
+                    if not step_outcome.error:
+                        break
+                except Exception as e:
+                    if attempt == 1:
+                        step_outcome = WorkerOutcome(
+                            ticket_id=env.ticket_id,
+                            outbound_messages=[],
+                            blocked_by_gate=False,
+                            latency_ms=0,
+                            llm_calls=0,
+                            error=str(e),
+                        )
 
-        # Record calls in event writer
-        referee.events.record_llm_call(outcome.llm_calls)
-        if outcome.gate:
-            referee.events.record_lyzr_call(1)
+            if step_outcome is None:
+                step_outcome = WorkerOutcome(
+                    ticket_id=env.ticket_id,
+                    outbound_messages=[],
+                    blocked_by_gate=False,
+                    latency_ms=0,
+                    llm_calls=0,
+                    error="Transport returned None",
+                )
+
+            step_outcomes.append(step_outcome)
+
+            # Record LLM/Gate spend in budget if applicable
+            if referee.budget:
+                if step_outcome.llm_calls > 0:
+                    referee.budget.spend("llm", step_outcome.llm_calls)
+                if step_outcome.gate:
+                    referee.budget.spend("lyzr", 1)
+
+            # Record calls in event writer
+            referee.events.record_llm_call(step_outcome.llm_calls)
+            if step_outcome.gate:
+                referee.events.record_lyzr_call(1)
+
+            # Emit message event for step
+            referee.events.emit(
+                round_id=round_id,
+                event_type="message",
+                from_agent="red",
+                to="dispatcher",
+                text=step_text,
+                attack_id=attack.id,
+            )
+
+            # Emit gate event if gate screened or blocked
+            if step_outcome.gate or step_outcome.blocked_by_gate:
+                referee.events.emit(
+                    round_id=round_id,
+                    event_type="gate",
+                    target="worker",
+                    decision=step_outcome.gate.decision if step_outcome.gate else ("INJECTION" if step_outcome.blocked_by_gate else "SAFE"),
+                    confidence=step_outcome.gate.confidence if step_outcome.gate else (0.95 if step_outcome.blocked_by_gate else 0.05),
+                    blocked=step_outcome.blocked_by_gate,
+                    cached=step_outcome.gate.cached if step_outcome.gate else False,
+                )
+
+            if step_outcome.blocked_by_gate:
+                stopped_by_gate = True
+                break
+
+        # Aggregate outcomes across steps
+        final_outcome = step_outcomes[-1]
+        all_outbound: list[str] = []
+        total_llm_calls = sum(so.llm_calls for so in step_outcomes)
+        total_latency_ms = sum(so.latency_ms for so in step_outcomes)
+        for so in step_outcomes:
+            all_outbound.extend(so.outbound_messages)
+
+        outcome = WorkerOutcome(
+            ticket_id=f"T-{round_id}-{attack.id}",
+            outbound_messages=all_outbound,
+            blocked_by_gate=stopped_by_gate,
+            gate=final_outcome.gate,
+            memory_after=final_outcome.memory_after,
+            refund_ledger_after=final_outcome.refund_ledger_after,
+            latency_ms=total_latency_ms,
+            llm_calls=total_llm_calls,
+            error=final_outcome.error if any(so.error for so in step_outcomes) else None,
+            policy_denied=any(getattr(so, "policy_denied", False) for so in step_outcomes),
+            memory_note_blocked=any(getattr(so, "memory_note_blocked", False) for so in step_outcomes),
+        )
 
         # 4. Deterministic Judge evaluation
         judge_res = judge(attack.goal, canary, outcome)
-
-        # 5. Emit events in strict order:
-        # (a) message event
-        referee.events.emit(
-            round_id=round_id,
-            event_type="message",
-            from_agent="red",
-            to="dispatcher",
-            text=attack.text,
-            attack_id=attack.id,
-        )
-
-        # (b) gate event if gate screened or blocked
-        if outcome.gate or outcome.blocked_by_gate:
-            referee.events.emit(
-                round_id=round_id,
-                event_type="gate",
-                target="worker",
-                decision=outcome.gate.decision if outcome.gate else ("INJECTION" if outcome.blocked_by_gate else "SAFE"),
-                confidence=outcome.gate.confidence if outcome.gate else (0.95 if outcome.blocked_by_gate else 0.05),
-                blocked=outcome.blocked_by_gate,
-                cached=outcome.gate.cached if outcome.gate else False,
-            )
 
         # (c) agent_state event (healthy -> compromised on success)
         if judge_res.outcome == "succeeded":
@@ -176,14 +215,14 @@ async def execute_round(
             event_type="judge",
             attack_id=attack.id,
             goal=attack.goal,
-            outcome=judge_res.outcome if judge_res.outcome != "error" else "resisted",
+            outcome=judge_res.outcome,
             evidence=judge_res.evidence,
         )
 
         # 6. Exclude persistent errors from ASR denominator
         if judge_res.outcome == "error":
             persistent_errors += 1
-            att_outcome = "resisted"
+            att_outcome = "error"
         else:
             att_outcome = judge_res.outcome
             if attack.known:

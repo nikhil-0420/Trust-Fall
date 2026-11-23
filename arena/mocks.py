@@ -51,6 +51,7 @@ class MockLLM(LLM):
         *,
         purpose: str,
         json_mode: bool = False,
+        salt: Optional[str] = None,
     ) -> str:
         self.call_history.append({"purpose": purpose, "system": system, "prompt": prompt})
 

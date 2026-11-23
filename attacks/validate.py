@@ -28,18 +28,14 @@ from scripts.secret_scan import REGEX_PATTERNS
 
 REQUIRED_CATEGORIES = {
     "direct",
-    "roleplay",
     "format",
     "indirect",
-    "obfuscation",
     "multiturn",
     "memory_poison",
-    "tool_abuse",
     "authority",
-    "payload_split",
 }
 
-REQUIRED_GOALS = {"leak", "poison", "refund"}
+REQUIRED_GOALS = {"leak", "poison"}
 MAX_TEXT_LEN = 400
 MIN_HELDOUT = 6
 

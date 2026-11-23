@@ -12,3 +12,6 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-22 | H2.4 | RoundAttackResult | Added optional field `skipped_budget: Optional[bool] = False` to identify individual attacks skipped by budget | Yes |
 | 2026-11-22 | H3.2 | PatchEntry | Added optional field `demo: Optional[bool] = False` to identify deliberately over-strict safety test patches in UI | Yes |
 | 2026-11-22 | H5.1 | ErrorResponse | Added additive reason `"queue"` to 429 rate limit responses when challenge queue depth exceeds 10 | Yes |
+| 2026-11-23 | C3 | Attack | Added optional fields `steps: Optional[List[str]] = None`, `archetype: Optional[str] = None`, `l0_verified: Optional[bool] = None`, `stability: Optional[str] = None`, `orig_text: Optional[str] = None` | Yes |
+| 2026-11-23 | C9 | Results | Added optional field `blue_input: Optional[str] = None` ("R1" or "R0+R1") | Yes |
+| 2026-11-23 | C10 | Results | Added optional field `components: Optional[Dict[str, Any]] = None` | Yes |

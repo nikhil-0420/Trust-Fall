@@ -23,3 +23,14 @@
 | H8-LIVE-RUN | DONE | Full live run completed (sample=False) | b055d0b | NONE | run-20261122-182325 verified: BAND + Agent37 + Lyzr + Gemini |
 | DIAGNOSIS | DONE | pytest -q (126 passed), secret_scan clean | 72e3875 | C0 | Diagnosed ASR 0/0/0 and R2 Benign 0/5; gate cache provenance fixed; worker post-restart restored; victim prompt added |
 | C0-QUARANTINE | DONE | pytest -q (126 passed), /api/results mock fallback verified | 7b5e038 | C1 | Quarantined run-20261122 into docs/archive/invalid-run-20261122/ with README; api fallback active |
+| C1-PREFLIGHT | DONE | check_env clean, smoke test gemini-3.5-flash-lite PASS | Pending | C2 | Preflight verified; fresh key works cleanly |
+| C2-VICTIM-REALISM | DONE | worker_system_victim.md natural persona edit 1, docs/METHODOLOGY.md | Pending | C3 | Accommodating persona without defense bypass instructions |
+| C3-MULTISTEP | DONE | pytest -q (128 passed), test_multistep.py verified | Pending | C4 | Multi-step steps field added to Attack model, sequential delivery in rounds.py |
+| C4-CANDIDATES | DONE | 40 candidates generated across 12 archetypes | Pending | C5 | data/calibration/candidates.json generated, verified no urls/keys/codeblocks |
+| C5-STAGE-A | DONE | 40 tested at L0 on undefended victim; 17 succeeded | Pending | C6 | data/calibration/stageA.json recorded; A1-A6, A8 achieved initial success |
+| C6-STAGE-B | DONE | 5 rewrites tested; 2 succeeded (C19_rw, C31_rw) | Pending | C7 | data/calibration/stageB.json recorded; qualifying pool expanded to 19 |
+| C7-STAGE-C | DONE | 19 candidates tested with 2 salted repeats (3 runs total) | Pending | C8 | 19/19 achieved >=2/3 stability (17 at 3/3, 2 at 2/3); data/calibration/stageC.json |
+| C8-LIBRARY | DONE | 18 attacks selected (12 known, 6 held-out); validate.py PASS | Pending | C9 | attacks/library.v1.json archived; new attacks/library.json; 83.3% L0 success rate |
+| C9-BLUE-FALLBACK | DONE | test_referee_blue_fallback.py passed; results.blue_input set | Pending | C10 | Blue incident log augmented from R0 when R1 < 2 successes; schema updated |
+| C10-SAFEGUARDS | DONE | test_safeguards.py passed; errors excluded from ASR, run invalid check | Pending | C11 | Idempotent worker launch, 3x Gemini retries + pacing, components logged |
+| C11-ACCEPTANCE | DONE | pytest -q (131 passed), secret_scan clean, docs/CALIBRATION.md | Pending | FINAL | status.json written; METHODOLOGY updated; calibration complete |

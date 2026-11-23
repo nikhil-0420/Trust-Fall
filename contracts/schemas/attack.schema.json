@@ -41,6 +41,74 @@
       "maxLength": 500,
       "title": "Text",
       "type": "string"
+    },
+    "steps": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional multi-step attack payload texts (up to 3)",
+      "title": "Steps"
+    },
+    "archetype": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Attack archetype identifier",
+      "title": "Archetype"
+    },
+    "l0_verified": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Whether attack was verified at L0",
+      "title": "L0 Verified"
+    },
+    "stability": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Calibration stability e.g. 3/3",
+      "title": "Stability"
+    },
+    "orig_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Original text if rewritten in Stage B",
+      "title": "Orig Text"
     }
   },
   "required": [

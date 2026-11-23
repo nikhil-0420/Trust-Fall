@@ -134,6 +134,29 @@ class Referee:
                     }
                 )
 
+        # Phase C9: Blue input fallback if fewer than 2 attacks succeeded in R1
+        blue_input = "R1"
+        if len(incident_log) < 2:
+            blue_input = "R0+R1"
+            added = 0
+            for att in r0_res.attacks:
+                if att.outcome == "succeeded" and att.known:
+                    if not any(entry["attack_id"] == att.id for entry in incident_log):
+                        full_att = next((a for a in known_attacks if a.id == att.id), None)
+                        incident_log.append(
+                            {
+                                "attack_id": att.id,
+                                "category": att.category,
+                                "goal": att.goal,
+                                "text": full_att.text if full_att else "",
+                                "outcome": att.outcome,
+                                "failing_layer": "worker",
+                            }
+                        )
+                        added += 1
+                        if added >= 4:
+                            break
+
         # 5. Blue turn: propose, test, and apply/rollback patch
         r0_rate = (
             (r0_res.benign.passed / r0_res.benign.total)
@@ -193,6 +216,7 @@ class Referee:
             contagion=contagion,
             budget=budget_summary,
             sample=use_mocks,
+            blue_input=blue_input,
         )
 
         # Save to data/runs/<run_id>/results.json

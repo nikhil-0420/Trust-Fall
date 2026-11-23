@@ -294,7 +294,8 @@
           "enum": [
             "succeeded",
             "blocked_by_gate",
-            "resisted"
+            "resisted",
+            "error"
           ],
           "title": "Outcome",
           "type": "string"
@@ -516,6 +517,33 @@
       "default": false,
       "description": "Flag indicating if sample/mock data",
       "title": "Sample"
+    },
+    "blue_input": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Incident log source for Blue: R1 or R0+R1",
+      "title": "Blue Input"
+    },
+    "components": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Execution component details (e.g. LLM/scripted)",
+      "title": "Components"
     }
   },
   "required": [

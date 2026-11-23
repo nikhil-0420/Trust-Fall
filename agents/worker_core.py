@@ -150,12 +150,14 @@ class WorkerCore:
         )
 
         # Call LLM (call 1)
+        salt = getattr(env_obj, "salt", None)
         llm_calls += 1
         raw_output = await self.llm.complete(
             system=system_prompt,
             prompt=task_prompt,
             purpose="worker_triage",
             json_mode=True,
+            salt=salt,
         )
 
         parsed_data = None
@@ -180,6 +182,7 @@ class WorkerCore:
                 prompt=retry_prompt,
                 purpose="worker_triage",
                 json_mode=True,
+                salt=f"{salt}_retry" if salt else None,
             )
             cleaned = _clean_json_text(raw_output)
             try:

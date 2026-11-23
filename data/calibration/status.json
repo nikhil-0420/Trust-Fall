@@ -1,0 +1,8 @@
+{
+  "state": "done",
+  "final_count": 18,
+  "known_count": 12,
+  "heldout_count": 6,
+  "l0_success_rate": 0.833,
+  "model_recommended": "gemini-3.5-flash-lite"
+}
