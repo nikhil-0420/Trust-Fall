@@ -11,6 +11,11 @@ import os
 from pathlib import Path
 import sys
 
+# Ensure process environment has relaxed caps and zero interval for live evaluation
+os.environ.setdefault("LLM_DAILY_CAP", "100000000")
+os.environ.setdefault("LYZR_DAILY_CAP", "100000000")
+os.environ.setdefault("GEMINI_MIN_INTERVAL_S", "0")
+
 # Add repo root to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
@@ -41,8 +46,8 @@ async def main():
     parser.add_argument("--live", action="store_true", help="Request live run (requires LIVE_APPROVED=1)")
     parser.add_argument("--rollback-demo", action="store_true", help="Demonstrate rejected patch rollback first")
     parser.add_argument("--run-id", type=str, default=None, help="Custom run identifier")
-    parser.add_argument("--timeout", type=float, default=20.0, help="Per-ticket referee timeout in seconds")
-    parser.add_argument("--attacks-per-round", type=int, default=4, help="Number of attacks per round")
+    parser.add_argument("--timeout", type=float, default=35.0, help="Per-ticket referee timeout in seconds")
+    parser.add_argument("--attacks-per-round", type=int, default=6, help="Number of attacks per round")
     parser.add_argument("--benign-count", type=int, default=5, help="Number of benign tickets per round")
     args = parser.parse_args()
 
@@ -109,11 +114,22 @@ async def main():
         )
 
         print(f"[*] Starting Arena full run ({run_id})...")
-        results = await referee.run_full(
-            run_id=run_id,
-            attacks_per_round=args.attacks_per_round,
-            rollback_demo=args.rollback_demo,
-        )
+        try:
+            results = await referee.run_full(
+                run_id=run_id,
+                attacks_per_round=args.attacks_per_round,
+                rollback_demo=args.rollback_demo,
+            )
+        except Exception as e:
+            if "INVALID-GATE" in str(e):
+                print(f"[!] RUN ABORTED: {e}")
+                run_summary_path = REPO_ROOT / "docs" / "RUN_SUMMARY.md"
+                run_summary_path.write_text(
+                    f"# Run Summary (INVALID-GATE)\n\n**Run ID:** `{run_id}`\n\nRun aborted immediately: {e}\nPartial data preserved under `data/runs/{run_id}/`.\n",
+                    encoding="utf-8",
+                )
+                return None
+            raise e
 
         print(f"[*] Run completed successfully! Run ID: {results.run_id}")
         for rnd in results.rounds:

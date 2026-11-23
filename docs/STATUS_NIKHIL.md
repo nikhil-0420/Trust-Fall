@@ -33,4 +33,11 @@
 | C8-LIBRARY | DONE | 18 attacks selected (12 known, 6 held-out); validate.py PASS | Pending | C9 | attacks/library.v1.json archived; new attacks/library.json; 83.3% L0 success rate |
 | C9-BLUE-FALLBACK | DONE | test_referee_blue_fallback.py passed; results.blue_input set | Pending | C10 | Blue incident log augmented from R0 when R1 < 2 successes; schema updated |
 | C10-SAFEGUARDS | DONE | test_safeguards.py passed; errors excluded from ASR, run invalid check | Pending | C11 | Idempotent worker launch, 3x Gemini retries + pacing, components logged |
-| C11-ACCEPTANCE | DONE | pytest -q (131 passed), secret_scan clean, docs/CALIBRATION.md | Pending | FINAL | status.json written; METHODOLOGY updated; calibration complete |
+| C11-ACCEPTANCE | DONE | pytest -q (131 passed), secret_scan clean, docs/CALIBRATION.md | 6156235 | S0 | status.json written; METHODOLOGY updated; calibration complete |
+| S0-VERIFY-CALIB | DONE | docs/CALIBRATION_CHECK.md written, GEMINI_MIN_INTERVAL_S configurable | In-progress | S1 | Verified 18 attacks, 12 known, 6 held-out, 0 prompt reversions needed |
+| S1-PREFLIGHT | DONE | pytest green, check_env clean, tunnel UP, health check 200 | In-progress | S2 | Cloudflare tunnel running; GATE_URL set; sandbox ping PASS |
+| S2-PARITY | DONE | sha256 match, 1 worker process, benign ticket roundtrip over BAND confirmed | In-progress | S3 | Sandbox worker matches victim prompt; sort_order=desc fix verified |
+| S3-L0-VERIFY | DONE | 15 attacks tested over BAND+Agent37; 9 succeeded (60.0% >= 60.0% threshold) | In-progress | S4 | L0 verified over real transport; verdict PASS; docs/L0_VERIFY.md written |
+| S4-FULL-RUN | DONE | Full live 3-round run completed over BAND+Agent37+Lyzr (run-20261123-081733) | In-progress | S5 | R0: ASR 50.0% (3/6), Benign 5/5; R1: ASR 80.0% (4/5); R2: all timeout; invalid triggered |
+| S5-DOCS | DONE | docs/RUN_SUMMARY.md written, API mock fallback verified (HTTP 200) | In-progress | S6 | Full empirical summary, honest findings, hackathon form answers documented |
+| S6-CLEANUP | DONE | Tunnel killed, LIVE_APPROVED=0, secret_scan clean, pytest 131 passed | None | Complete | Final deliverables ready |

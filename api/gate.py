@@ -28,13 +28,14 @@ class LyzrGate(Gate):
         self,
         api_key: str | None = None,
         cache_dir: str = "data/cache/gate",
-        timeout_s: float = 5.0,
+        timeout_s: float = 20.0,
     ):
         self.api_key = api_key or os.getenv("LYZR_API_KEY")
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.timeout_s = timeout_s
         self.mock_gate = MockGate()
+        self.consecutive_real_errors = 0
 
     def _hash(self, text: str, impl: str = "lyzr") -> str:
         # Cache key includes implementation name (lyzr vs mock)
@@ -124,8 +125,12 @@ class LyzrGate(Gate):
                 response = await client.post(LYZR_DETECTOR_URL, headers=headers, json=payload)
 
             if response.status_code != 200:
+                self.consecutive_real_errors += 1
+                if self.consecutive_real_errors >= 3:
+                    raise RuntimeError("INVALID-GATE: 3 consecutive REAL Lyzr calls returned ERROR")
                 return GateResult(decision="ERROR", confidence=1.0, cached=False, blocked=True)
 
+            self.consecutive_real_errors = 0
             data = response.json()
             message = str(data.get("message", "")).upper()
             details = data.get("details", {})
@@ -153,7 +158,12 @@ class LyzrGate(Gate):
                 blocked=blocked,
             )
 
-        except (httpx.TimeoutException, httpx.RequestError, json.JSONDecodeError, Exception):
+        except (httpx.TimeoutException, httpx.RequestError, json.JSONDecodeError, Exception) as exc:
+            if "INVALID-GATE" in str(exc):
+                raise exc
+            self.consecutive_real_errors += 1
+            if self.consecutive_real_errors >= 3:
+                raise RuntimeError("INVALID-GATE: 3 consecutive REAL Lyzr calls returned ERROR") from exc
             # Fail closed on any network error or timeout
             return GateResult(
                 decision="ERROR",

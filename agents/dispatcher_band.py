@@ -82,7 +82,7 @@ class BandDispatcherAgent:
         if self.rest_client is None:
             return []
         try:
-            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id, limit=100)
+            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id, limit=100, sort_order="desc")
             return resp.data or []
         except Exception as e:
             logger.warning(f"Error listing messages in room: {e}")
@@ -130,8 +130,7 @@ class BandDispatcherAgent:
                 mentions = []
                 if red_id:
                     mentions.append({"handle": "nikhil.guddanti/red-agent", "id": red_id, "name": "Red Agent"})
-                if self.agent_id:
-                    mentions.append({"handle": "nikhil.guddanti/agent-a", "id": self.agent_id, "name": "Dispatcher"})
+                # Never mention self (Dispatcher / agent-a) to avoid BAND 422 cannot_mention_self
                 self._post_to_room(reply, mentions=mentions if mentions else None)
                 return
 

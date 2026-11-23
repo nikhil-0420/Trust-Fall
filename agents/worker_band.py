@@ -16,6 +16,7 @@ import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 from agents.sync_config import sync_band_config
@@ -43,7 +44,7 @@ class BandWorkerAgent:
 
         self.worker_core = worker_core or WorkerCore(
             llm=get_llm(),
-            state_dir=Path(os.getenv("STATE_DIR", "data/worker_state")),
+            state_dir=Path(os.getenv("STATE_DIR", ".")),
         )
         self.room_id = os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")
         self.processed_msg_ids: set[str] = set()
@@ -74,7 +75,7 @@ class BandWorkerAgent:
         if self.rest_client is None:
             return []
         try:
-            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id, limit=100)
+            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id, limit=100, sort_order="desc")
             return resp.data or []
         except Exception as e:
             logger.warning(f"Error listing messages in room: {e}")

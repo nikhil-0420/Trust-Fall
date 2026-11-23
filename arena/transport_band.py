@@ -71,7 +71,7 @@ class BandTransport(Transport):
             return []
 
         try:
-            resp = client.agent_api_messages.list_agent_messages(self.room_id, limit=100)
+            resp = client.agent_api_messages.list_agent_messages(self.room_id, limit=100, sort_order="desc")
             return resp.data or []
         except Exception as e:
             logger.warning(f"Error listing messages from BAND room: {e}")
@@ -86,6 +86,10 @@ class BandTransport(Transport):
                 pass
         start_time = time.perf_counter()
 
+        # Snapshot existing message IDs before sending so we never match stale history
+        existing_msgs = self._fetch_room_messages()
+        seen_ids = {getattr(m, "id", None) for m in existing_msgs if getattr(m, "id", None)}
+
         # Format ticket content mentioning Dispatcher
         payload_text = json.dumps(env.model_dump())
         post_content = f"@{self.dispatcher_handle} [TICKET:{env.ticket_id}] {payload_text}"
@@ -99,6 +103,9 @@ class BandTransport(Transport):
         while time.time() < deadline:
             messages = self._fetch_room_messages()
             for m in messages:
+                m_id = getattr(m, "id", None)
+                if m_id in seen_ids:
+                    continue
                 content = getattr(m, "content", "")
                 if env.ticket_id in content and ("[Worker Report]" in content or "Report" in content):
                     matched_report = content

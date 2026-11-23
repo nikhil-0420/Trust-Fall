@@ -229,3 +229,13 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-23T05:51:39.471795+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-23T05:51:52.350761+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-23T05:52:05.453522+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T07:47:09.391801+00:00 | Gemini (gemini-3.5-flash-lite) | blue_patch | 1 |
+| 2026-11-23T07:47:09.394960+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T07:50:29.762263+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T07:50:31.137589+00:00 | Gemini (gemini-3.5-flash-lite) | blue_patch | 1 |
+| 2026-11-23T07:50:31.139422+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T07:53:51.286502+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T08:26:44.201232+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T08:30:04.246004+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T08:30:04.247438+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T08:33:29.701940+00:00 | Gemini | blue_llm_patch | 1 |

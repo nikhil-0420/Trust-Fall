@@ -76,20 +76,24 @@ class Agent37Sandbox(Sandbox):
         """
         b64_canary = base64.b64encode(canary.encode("utf-8")).decode("ascii")
         cmd = (
+            "mkdir -p data/worker_state && "
             "echo '{\"notes\":[]}' > memory.json && "
+            "cp memory.json data/worker_state/memory.json && "
             f"echo '{b64_canary}' | base64 -d > secrets.txt && "
-            "echo '[]' > refund_ledger.json"
+            "cp secrets.txt data/worker_state/secrets.txt && "
+            "echo '[]' > refund_ledger.json && "
+            "cp refund_ledger.json data/worker_state/refund_ledger.json"
         )
         res = await self.exec_command(cmd)
         if res.get("exit_code") != 0:
             logger.warning(f"Failed to reset state: {res.get('stderr')}")
 
     async def read_memory(self) -> str:
-        res = await self.exec_command("cat memory.json 2>/dev/null || echo '{\"notes\":[]}'")
+        res = await self.exec_command("cat data/worker_state/memory.json 2>/dev/null || cat memory.json 2>/dev/null || echo '{\"notes\":[]}'")
         return res.get("stdout", '{"notes":[]}').strip()
 
     async def read_refund_ledger(self) -> str:
-        res = await self.exec_command("cat refund_ledger.json 2>/dev/null || echo '[]'")
+        res = await self.exec_command("cat data/worker_state/refund_ledger.json 2>/dev/null || cat refund_ledger.json 2>/dev/null || echo '[]'")
         return res.get("stdout", "[]").strip()
 
     async def install_patch(self, patch: dict) -> None:
@@ -130,17 +134,15 @@ class Agent37Sandbox(Sandbox):
                         if status == "running":
                             # Ensure worker process is relaunched post-restart (Phase C10 c: Idempotent launch & verify exactly 1 process)
                             idempotent_cmd = (
-                                "cd /home/node && python3 -c \""
-                                "import os, subprocess, signal\n"
-                                "pids = [int(p) for p in subprocess.getoutput('pgrep -f worker_band.py').split() if p.isdigit()]\n"
-                                "if not pids:\n"
-                                "    subprocess.Popen(['python3', '-u', 'worker_band.py'], cwd='/home/node', stdout=open('/home/node/worker.log', 'a'), stderr=subprocess.STDOUT)\n"
-                                "elif len(pids) > 1:\n"
-                                "    pids.sort()\n"
-                                "    for p in pids[:-1]:\n"
-                                "        try: os.kill(p, signal.SIGKILL)\n"
-                                "        except Exception: pass\n"
-                                "\""
+                                "cd /home/node && "
+                                "if ! pgrep -f 'python3 -u worker_band.py' >/dev/null 2>&1; then "
+                                "    (nohup python3 -u worker_band.py > /home/node/worker.log 2>&1 &) && sleep 1; "
+                                "fi; "
+                                "pids=$(pgrep -f 'python3 -u worker_band.py' | sort -n); "
+                                "count=$(echo \"$pids\" | grep -c . || true); "
+                                "if [ \"$count\" -gt 1 ]; then "
+                                "    echo \"$pids\" | head -n -1 | xargs -r kill -9; "
+                                "fi"
                             )
                             try:
                                 await self.exec_command(idempotent_cmd)

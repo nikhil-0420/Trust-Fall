@@ -68,12 +68,25 @@ class GeminiLLM(LLM):
         except Exception:
             pass
 
+    @classmethod
+    def get_min_interval(cls) -> float:
+        val = os.getenv("GEMINI_MIN_INTERVAL_S")
+        if val is not None:
+            try:
+                return float(val)
+            except ValueError:
+                pass
+        return cls._min_call_interval
+
     async def _rate_limit_wait(self) -> None:
+        interval = self.get_min_interval()
+        if interval <= 0:
+            return
         async with GeminiLLM._call_lock:
             now = time.time()
             elapsed = now - GeminiLLM._last_call_time
-            if elapsed < GeminiLLM._min_call_interval:
-                sleep_needed = GeminiLLM._min_call_interval - elapsed
+            if elapsed < interval:
+                sleep_needed = interval - elapsed
                 await asyncio.sleep(sleep_needed)
             GeminiLLM._last_call_time = time.time()
 

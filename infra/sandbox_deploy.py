@@ -62,14 +62,21 @@ def upload_file_b64(client: httpx.Client, inst_id: str, key: str, local_path: Pa
     data = local_path.read_bytes()
     b64 = base64.b64encode(data).decode("ascii")
     cmd = f"mkdir -p $(dirname {remote_path}) && echo '{b64}' | base64 -d > {remote_path}"
-    resp = client.post(
-        f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
-        headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-        json={"command": cmd},
-        timeout=30.0,
-    )
-    if resp.json().get("exit_code") != 0:
-        raise RuntimeError(f"Failed to upload {local_path} to {remote_path}: {resp.text}")
+    for attempt in range(3):
+        try:
+            resp = client.post(
+                f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
+                headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
+                json={"command": cmd},
+                timeout=30.0,
+            )
+            if resp.json().get("exit_code") != 0:
+                raise RuntimeError(f"Failed to upload {local_path} to {remote_path}: {resp.text}")
+            return
+        except Exception as e:
+            if attempt == 2:
+                raise e
+            time.sleep(2.0 * (attempt + 1))
 
 
 def deploy_worker() -> str:
@@ -104,6 +111,7 @@ def deploy_worker() -> str:
             (root / "agents" / "sync_config.py", "agents/sync_config.py"),
             (root / "agents" / "__init__.py", "agents/__init__.py"),
             (root / "agents" / "prompts" / "worker_system.md", "agents/prompts/worker_system.md"),
+            (root / "agents" / "prompts" / "worker_system_victim.md", "agents/prompts/worker_system_victim.md"),
             (root / "agents" / "prompts" / "worker_task.md", "agents/prompts/worker_task.md"),
             (root / "contracts" / "models.py", "contracts/models.py"),
             (root / "contracts" / "patch_validate.py", "contracts/patch_validate.py"),
@@ -138,7 +146,7 @@ def deploy_worker() -> str:
         client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": "killall -9 python3 2>/dev/null || true"},
+            json={"command": "pkill -9 -f python3 2>/dev/null || true"},
         )
         start_cmd = "cd /home/node && (python3 -u worker_band.py > worker.log 2>&1 &) && sleep 1; ps aux | grep python"
         r_start = client.post(

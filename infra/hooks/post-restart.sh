@@ -13,7 +13,7 @@ if [ -f "/root/patch.json" ]; then
 fi
 
 # Kill any existing worker process cleanly to remain idempotent
-killall -9 python3 2>/dev/null || true
+pkill -9 -f python3 2>/dev/null || true
 sleep 1
 
 # Launch worker in background with nohup if worker_band.py exists
