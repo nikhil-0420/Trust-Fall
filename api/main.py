@@ -205,14 +205,30 @@ async def get_events(round_id: str) -> list[dict[str, Any]]:
 async def get_report(round_id: str):
     r = round_id.upper()
     report_file = Path(f"data/reports/{r}.md")
-    if not report_file.exists():
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "not_found", "message": f"Report {r}.md not found"}},
-        )
+    if report_file.exists():
+        content = report_file.read_text(encoding="utf-8")
+        return Response(content=content, media_type="text/markdown")
 
-    content = report_file.read_text(encoding="utf-8")
-    return Response(content=content, media_type="text/markdown")
+    # Fallback to generating report from data/mock/results.json
+    mock_results = Path("data/mock/results.json")
+    if mock_results.exists():
+        from arena.reports import generate_reports
+        from contracts.models import Results
+        import tempfile
+        try:
+            res_obj = Results.model_validate_json(mock_results.read_text(encoding="utf-8"))
+            with tempfile.TemporaryDirectory() as tmpdir:
+                generate_reports(res_obj, output_dir=tmpdir)
+                tmp_rep = Path(tmpdir) / f"{r}.md"
+                if tmp_rep.exists():
+                    return Response(content=tmp_rep.read_text(encoding="utf-8"), media_type="text/markdown")
+        except Exception:
+            pass
+
+    raise HTTPException(
+        status_code=404,
+        detail={"error": {"code": "not_found", "message": f"Report {r}.md not found"}},
+    )
 
 
 # ------------------------------------------------------------------------------
