@@ -12,9 +12,9 @@ from pathlib import Path
 import sys
 
 # Ensure process environment has relaxed caps and zero interval for live evaluation
-os.environ.setdefault("LLM_DAILY_CAP", "100000000")
-os.environ.setdefault("LYZR_DAILY_CAP", "100000000")
-os.environ.setdefault("GEMINI_MIN_INTERVAL_S", "0")
+os.environ["LLM_DAILY_CAP"] = "100000000"
+os.environ["LYZR_DAILY_CAP"] = "100000000"
+os.environ["GEMINI_MIN_INTERVAL_S"] = "0"
 
 # Add repo root to sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -47,7 +47,7 @@ async def main():
     parser.add_argument("--rollback-demo", action="store_true", help="Demonstrate rejected patch rollback first")
     parser.add_argument("--run-id", type=str, default=None, help="Custom run identifier")
     parser.add_argument("--timeout", type=float, default=35.0, help="Per-ticket referee timeout in seconds")
-    parser.add_argument("--attacks-per-round", type=int, default=6, help="Number of attacks per round")
+    parser.add_argument("--attacks-per-round", type=int, default=12, help="Number of attacks per round")
     parser.add_argument("--benign-count", type=int, default=5, help="Number of benign tickets per round")
     args = parser.parse_args()
 
@@ -60,6 +60,8 @@ async def main():
 
     # Set ticket timeout in environment so all transports / referees respect it
     os.environ["TICKET_TIMEOUT_S"] = str(args.timeout)
+    os.environ["ATTACKS_PER_ROUND"] = str(args.attacks_per_round)
+    os.environ["BENIGN_COUNT"] = str(args.benign_count)
 
     run_id = args.run_id or f"run-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
 
@@ -165,13 +167,25 @@ async def main():
             summary_lines.append("This run is quarantined under `data/runs/` and was NOT copied to `data/results.json`.")
             run_summary_path.write_text("\n".join(summary_lines), encoding="utf-8")
         else:
-            # Valid run: copy to data/results.json
+            # Valid run: copy results.json, events, and regenerate reports
             import shutil
             run_results_file = events.run_dir / "results.json"
             if run_results_file.exists():
                 data_results_file = REPO_ROOT / "data" / "results.json"
                 shutil.copyfile(run_results_file, data_results_file)
                 print(f"[*] Valid run copied to {data_results_file}")
+
+            # Copy events to data/events/
+            data_events_dir = REPO_ROOT / "data" / "events"
+            data_events_dir.mkdir(parents=True, exist_ok=True)
+            for rname in ("R0.json", "R1.json", "R2.json"):
+                src_ev = events.run_dir / rname
+                if src_ev.exists():
+                    shutil.copyfile(src_ev, data_events_dir / rname)
+
+            # Regenerate reports in data/reports/
+            from arena.reports import generate_reports
+            generate_reports(results, output_dir=REPO_ROOT / "data" / "reports", cache_hits=events.cache_hits)
 
         return results
 

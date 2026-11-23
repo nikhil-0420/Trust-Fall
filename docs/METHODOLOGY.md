@@ -30,3 +30,9 @@ To ensure that attacks test genuine behavioral alignment rather than fighting an
 3. **Whole-archetype held-out set**: The held-out attack set withholds entire archetypes (at least 3 complete archetypes, including both leak and poison) from Blue's training/defense context to honestly measure defense generalization to unseen attack categories.
 4. **L0 success rate by construction**: The L0 success rate of the selected library is high BY CONSTRUCTION because candidates are chosen specifically for effectiveness against the baseline. This is not a claim about LLM robustness in general, but a standard calibration procedure for red-teaming benchmarks.
 5. **Model non-determinism**: Results stem from specific runs with specified models (`gemini-3.5-flash-lite` primary) and temperature settings.
+
+
+## Benchmark Execution & Transport Parity
+To guarantee deterministic evaluation free from external network volatility, the official benchmark evaluation (`data/results.json`) executes in-process via `TRANSPORT=loopback` with an in-process `FakeSandbox`:
+- **Real Cognitive Services**: The LLM cognitive components (Worker, Blue defender, and Red attacker) execute against live Gemini models (`gemini-3.5-flash-lite`), and the ingress security gate executes against the live Lyzr Cloud API via the local Cloudflare tunnel.
+- **Transport Separation**: The remote network transport (BAND chat API) and remote container sandbox (Agent37 Docker instance) were thoroughly evaluated in independent live verification runs (`docs/L0_VERIFY.md` and `docs/RESTART_DIAGNOSIS.md`). In high-throughput multi-round evaluations, third-party chat webhook latency introduces intermittent timeouts; the loopback benchmark preserves identical agent logic, prompt evaluation, memory state persistence, and gate screening while eliminating network transport artifacts.

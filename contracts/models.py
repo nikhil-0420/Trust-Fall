@@ -191,3 +191,4 @@ class Results(BaseModel):
     sample: Optional[bool] = Field(default=False, description="Flag indicating if sample/mock data")
     blue_input: Optional[str] = Field(default=None, description="Incident log source for Blue: R1 or R0+R1")
     components: Optional[Dict[str, Any]] = Field(default=None, description="Execution component details (e.g. LLM/scripted)")
+    transport: Optional[str] = Field(default=None, description="Transport layer used: band or loopback")

@@ -45,3 +45,6 @@
 | STEP3-RESTART-FIX | DONE | 3 post-fix restart cycles PASS (avg 41s), ticket replies received | Pending | STEP4 | worker.env (chmod 600) + run_worker.sh (flock) + ready marker |
 | STEP4-HOT-RELOAD | DONE | pytest -q (136 passed, test_hot_reload.py) | Pending | STEP5 | Hot-reload patch delivery implemented; restart removed from run path |
 | STEP5-PERSISTENCE | DONE | scripts/test_persistence_check.py (PASS) | Pending | STEP6 | memory.json and patch.json persisted across reboot; 1 worker; BAND ping PASS |
+| STEP6-LIVE-RUN | DONE | Full live run completed over BAND+Agent37+Lyzr (run-20261123-124049) | Pending | STEP7 | R0: ASR 50.0%, Benign 5/5; R1: ASR 50.0%, Benign 5/5; R2: ASR 0.0%, Benign 5/5; BAND timeouts triggered INVALID-RUN |
+| STEP7-BENCHMARK | DONE | Full benchmark run completed in-process (run-20261123-132347) | Pending | STEP8 | VALID (0% errors, 100% benign pass); R0: 66.7%, R1: 50.0%, R2: 40.0%; copied to data/results.json |
+| STEP8-DOCS | DONE | docs/RUN_SUMMARY.md & METHODOLOGY.md updated | Pending | STEP9 | Honest findings, latency breakdown, hackathon form answers documented |

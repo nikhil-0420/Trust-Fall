@@ -15,3 +15,4 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-23 | C3 | Attack | Added optional fields `steps: Optional[List[str]] = None`, `archetype: Optional[str] = None`, `l0_verified: Optional[bool] = None`, `stability: Optional[str] = None`, `orig_text: Optional[str] = None` | Yes |
 | 2026-11-23 | C9 | Results | Added optional field `blue_input: Optional[str] = None` ("R1" or "R0+R1") | Yes |
 | 2026-11-23 | C10 | Results | Added optional field `components: Optional[Dict[str, Any]] = None` | Yes |
+| 2026-11-23 | S7 | Results | Added optional field `transport: Optional[str] = None` ("band" or "loopback") | Yes |

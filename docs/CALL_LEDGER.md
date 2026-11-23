@@ -239,3 +239,65 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-23T08:30:04.246004+00:00 | Gemini | blue_llm_patch | 1 |
 | 2026-11-23T08:30:04.247438+00:00 | Gemini | blue_llm_patch | 1 |
 | 2026-11-23T08:33:29.701940+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T12:59:21.241956+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T13:00:23.434840+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T13:22:55.640519+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:23:56.866093+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:23:58.043612+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:00.386709+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:01.670386+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:03.107650+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:03.975206+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:05.077930+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:06.063743+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:07.054148+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:08.024673+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:33.459511+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:34.444740+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:36.101482+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:37.213698+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:24:38.310747+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:02.880937+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:04.610423+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:11.828131+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:12.626580+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:15.328135+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:39.491896+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:47.623779+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:50.794686+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:55.392068+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:25:57.911718+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:01.112536+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:02.848362+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:04.851732+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:06.367700+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:17.197029+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:21.369559+00:00 | Gemini (gemini-3.5-flash-lite) | blue_patch | 1 |
+| 2026-11-23T13:26:21.375608+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T13:26:44.804941+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:26:54.100413+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:27:59.049184+00:00 | Gemini Switch | gemini-3.5-flash-lite -> gemini-3.1-flash-lite (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high deman) | 1 |
+| 2026-11-23T13:28:00.259027+00:00 | Gemini (gemini-3.1-flash-lite) | worker_triage_fallback | 1 |
+| 2026-11-23T13:28:14.530854+00:00 | Gemini (gemini-3.1-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:30:56.357585+00:00 | Gemini (gemini-3.1-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:30:56.365055+00:00 | Gemini | blue_llm_patch | 1 |
+| 2026-11-23T13:31:34.173449+00:00 | Gemini (gemini-3.1-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:32:47.320113+00:00 | Gemini Switch | gemini-3.1-flash-lite -> gemini-3.5-flash-lite (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high deman) | 1 |
+| 2026-11-23T13:32:51.264641+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage_fallback | 1 |
+| 2026-11-23T13:32:54.858298+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:32:57.819399+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:02.427054+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:10.984329+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:21.419637+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:21.430795+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:26.228458+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:26.248003+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:29.066026+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:32.010214+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:32.865217+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:33.662107+00:00 | Lyzr | gate_screen | 1 |
+| 2026-11-23T13:33:46.455478+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:50.282149+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:33:58.827399+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:34:06.417189+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-23T13:34:39.817659+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |

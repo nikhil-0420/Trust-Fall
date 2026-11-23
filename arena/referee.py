@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from arena.events import EventWriter
-from arena.interfaces import BlueAgent, Gate, RedAgent, Sandbox, Transport
+from arena.interfaces import BlueAgent, Envelope, Gate, RedAgent, Sandbox, Transport
 from arena.reports import generate_reports
 from arena.rollback import apply_or_rollback
 from arena.rounds import execute_round
@@ -56,6 +56,41 @@ class Referee:
         if hasattr(self.transport, "gate"):
             self.transport.gate = self.gate
 
+    async def check_worker_liveness(self, round_id: str) -> None:
+        """Sends a benign liveness ticket before a round. If unanswered in 30s, redeploy once and retry once."""
+        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in {"1", "true", "yes"}
+        if use_mocks:
+            return
+
+        transport_type = os.getenv("TRANSPORT", "band").strip().lower()
+        if transport_type != "band":
+            return
+
+        ticket_id = f"LIVENESS-{round_id}-{int(datetime.now(UTC).timestamp())}"
+        env = Envelope(
+            ticket_id=ticket_id,
+            profile="L0",
+            text=f"Ping support: verifying worker liveness before {round_id}.",
+            kind="benign",
+            attack_id=None,
+        )
+        for attempt in range(2):
+            try:
+                outcome = await self.transport.send_ticket(env, timeout_s=30.0)
+                if outcome and outcome.outbound_messages and not outcome.error:
+                    return
+            except Exception:
+                pass
+            if attempt == 0:
+                from infra.sandbox_deploy import deploy_worker
+                try:
+                    deploy_worker()
+                    import asyncio
+                    await asyncio.sleep(3.0)
+                except Exception:
+                    pass
+        raise RuntimeError(f"INVALID-WORKER: Worker did not answer liveness ticket for round {round_id} after redeploy")
+
     async def run_round(
         self,
         round_id: RoundId,
@@ -100,6 +135,9 @@ class Referee:
         known_attacks = [a for a in library if a.known]
         heldout_attacks = [a for a in library if not a.known]
 
+        if hasattr(self.red, "attacks_per_round"):
+            self.red.attacks_per_round = attacks_per_round
+
         # Select initial known attacks for R0 using red agent
         try:
             r0_attacks = await self.red.next_attacks("R0", library, [])
@@ -107,6 +145,7 @@ class Referee:
             r0_attacks = known_attacks[:attacks_per_round]
 
         # 2. R0: Baseline (L0)
+        await self.check_worker_liveness("R0")
         r0_res = await self.run_round("R0", "L0", r0_attacks, patch_version=0)
 
         # 3. R1: Screening Gate (L1) with adaptive red selection
@@ -116,6 +155,7 @@ class Referee:
         except Exception:
             r1_attacks = r0_attacks
 
+        await self.check_worker_liveness("R1")
         r1_res = await self.run_round("R1", "L1", r1_attacks, patch_version=0)
 
         # 4. Collect incident log of attacks that succeeded in R1 (known only!)
@@ -188,10 +228,12 @@ class Referee:
             r2_known = [a for a in known_attacks if a.id in successful_known_ids] or r0_attacks[:3]
             r2_attacks = r2_known + heldout_attacks
 
+        await self.check_worker_liveness("R2")
         r2_res = await self.run_round("R2", "L2", r2_attacks, patch_version=patch_version)
 
         # 7. Compile Results model
         use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in {"1", "true", "yes"}
+        transport_name = os.getenv("TRANSPORT", "band" if not use_mocks else "loopback").strip().lower()
         models = {
             "worker": os.getenv("MODEL_NAME", "gemini-3.5-flash-lite"),
             "red": "scripted",
@@ -217,6 +259,7 @@ class Referee:
             budget=budget_summary,
             sample=use_mocks,
             blue_input=blue_input,
+            transport=transport_name,
         )
 
         # Save to data/runs/<run_id>/results.json

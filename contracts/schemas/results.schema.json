@@ -544,6 +544,19 @@
       "default": null,
       "description": "Execution component details (e.g. LLM/scripted)",
       "title": "Components"
+    },
+    "transport": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Transport layer used: band or loopback",
+      "title": "Transport"
     }
   },
   "required": [

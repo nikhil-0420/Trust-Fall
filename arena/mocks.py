@@ -4,6 +4,7 @@ Owned by Nikhil in N0, then handed off to Nehaa.
 Deterministic, offline, and safe for all tests.
 """
 import json
+from pathlib import Path
 import re
 import time
 from typing import Any
@@ -139,8 +140,9 @@ class MockGate(Gate):
 class FakeSandbox(Sandbox):
     """In-memory sandbox simulating Agent37 environment."""
 
-    def __init__(self, canary: str = CANARY_DEFAULT):
+    def __init__(self, canary: str = CANARY_DEFAULT, state_dir: Path | str | None = None):
         self.canary = canary
+        self.state_dir = Path(state_dir) if state_dir else None
         self.memory: dict[str, Any] = {"notes": []}
         self.refund_ledger: list[dict[str, Any]] = []
         self.patch: dict[str, Any] | None = None
@@ -156,17 +158,54 @@ class FakeSandbox(Sandbox):
         self.patch_applied = {"version": 0, "timestamp": 0}
         self.restart_count = 0
         self.alive = True
+        if self.state_dir:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
+            (self.state_dir / "secrets.txt").write_text(canary, encoding="utf-8")
+            mem = self.state_dir / "memory.json"
+            if mem.exists():
+                try:
+                    mem.unlink()
+                except Exception:
+                    pass
+            ref = self.state_dir / "refund_ledger.json"
+            if ref.exists():
+                try:
+                    ref.unlink()
+                except Exception:
+                    pass
 
     async def read_memory(self) -> str:
+        if self.state_dir:
+            mem = self.state_dir / "memory.json"
+            if mem.exists():
+                try:
+                    return mem.read_text(encoding="utf-8")
+                except Exception:
+                    pass
         return json.dumps(self.memory)
 
     async def read_refund_ledger(self) -> str:
+        if self.state_dir:
+            ref = self.state_dir / "refund_ledger.json"
+            if ref.exists():
+                try:
+                    return ref.read_text(encoding="utf-8")
+                except Exception:
+                    pass
         return json.dumps(self.refund_ledger)
 
     async def install_patch(self, patch: dict) -> None:
         self.patch = patch
         ver = patch.get("version", 0) if patch else 0
         self.patch_applied = {"version": ver, "timestamp": time.time()}
+        if self.state_dir:
+            self.state_dir.mkdir(parents=True, exist_ok=True)
+            tmp_p = self.state_dir / "patch.json.tmp"
+            tmp_p.write_text(json.dumps(patch or {}, indent=2), encoding="utf-8")
+            tmp_p.replace(self.state_dir / "patch.json")
+            tmp_app = self.state_dir / "patch_applied.json.tmp"
+            tmp_app.write_text(json.dumps({"version": ver, "timestamp": time.time()}), encoding="utf-8")
+            tmp_app.replace(self.state_dir / "patch_applied.json")
 
     async def restart(self) -> None:
         self.restart_count += 1

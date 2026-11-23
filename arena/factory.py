@@ -4,6 +4,7 @@ Resolves implementations for Transport, Sandbox, Gate, LLM, Red, and Blue.
 Falls back safely to mocks if keys or implementations are missing.
 """
 import os
+from pathlib import Path
 import sys
 import warnings
 from dotenv import load_dotenv
@@ -85,8 +86,8 @@ def get_sandbox() -> Sandbox:
             return Agent37Sandbox(api_key=api_key)
         except Exception as e:
             warnings.warn(f"Failed to load Agent37Sandbox ({e}), falling back to FakeSandbox")
-            return FakeSandbox()
-    return FakeSandbox()
+            return FakeSandbox(state_dir=Path("data/loopback_state"))
+    return FakeSandbox(state_dir=Path("data/loopback_state"))
 
 
 def get_llm() -> LLM:
