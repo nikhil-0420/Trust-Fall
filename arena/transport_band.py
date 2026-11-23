@@ -65,17 +65,36 @@ class BandTransport(Transport):
         except Exception as e:
             logger.warning(f"Error posting message to BAND room {self.room_id}: {e}")
 
-    def _fetch_room_messages(self) -> List[Any]:
+    def _fetch_room_messages(self, max_pages: int = 1) -> List[Any]:
         client = self.reader_client or self.rest_client
         if client is None:
             return []
 
-        try:
-            resp = client.agent_api_messages.list_agent_messages(self.room_id, limit=100, sort_order="desc")
-            return resp.data or []
-        except Exception as e:
-            logger.warning(f"Error listing messages from BAND room: {e}")
-            return []
+        messages: List[Any] = []
+        cursor: Optional[str] = None
+        pages = 0
+
+        while pages < max_pages:
+            try:
+                if cursor:
+                    resp = client.agent_api_messages.list_agent_messages(
+                        self.room_id, limit=100, cursor=cursor, sort_order="desc"
+                    )
+                else:
+                    resp = client.agent_api_messages.list_agent_messages(
+                        self.room_id, limit=100, sort_order="desc"
+                    )
+                batch = resp.data or []
+                messages.extend(batch)
+                pages += 1
+                if not resp.metadata or not resp.metadata.has_more or not batch:
+                    break
+                cursor = resp.metadata.next_cursor
+            except Exception as e:
+                logger.warning(f"Error listing messages from BAND room: {e}")
+                break
+
+        return messages
 
     async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
         env_timeout = os.getenv("TICKET_TIMEOUT_S")

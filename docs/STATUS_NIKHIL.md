@@ -48,3 +48,4 @@
 | STEP6-LIVE-RUN | DONE | Full live run completed over BAND+Agent37+Lyzr (run-20261123-124049) | Pending | STEP7 | R0: ASR 50.0%, Benign 5/5; R1: ASR 50.0%, Benign 5/5; R2: ASR 0.0%, Benign 5/5; BAND timeouts triggered INVALID-RUN |
 | STEP7-BENCHMARK | DONE | Full benchmark run completed in-process (run-20261123-132347) | Pending | STEP8 | VALID (0% errors, 100% benign pass); R0: 66.7%, R1: 50.0%, R2: 40.0%; copied to data/results.json |
 | STEP8-DOCS | DONE | docs/RUN_SUMMARY.md & METHODOLOGY.md updated | Pending | STEP9 | Honest findings, latency breakdown, hackathon form answers documented |
+| ANALYSIS-ONLY | DONE | pytest -q (136 passed), secret scan clean | Pending | COMPLETE | R2 residuals analyzed (docs/R2_ANALYSIS.md); BAND timeout root cause diagnosed (docs/BAND_TIMEOUT_DIAGNOSIS.md); pagination fix added; LIVE SKIPPED |

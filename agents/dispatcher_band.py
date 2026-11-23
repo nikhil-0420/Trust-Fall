@@ -78,15 +78,32 @@ class BandDispatcherAgent:
         except Exception as e:
             logger.warning(f"Error posting dispatcher message to BAND: {e}")
 
-    def _fetch_messages(self) -> list[Any]:
+    def _fetch_messages(self, max_pages: int = 1) -> list[Any]:
         if self.rest_client is None:
             return []
-        try:
-            resp = self.rest_client.agent_api_messages.list_agent_messages(self.room_id, limit=100, sort_order="desc")
-            return resp.data or []
-        except Exception as e:
-            logger.warning(f"Error listing messages in room: {e}")
-            return []
+        messages: list[Any] = []
+        cursor: Optional[str] = None
+        pages = 0
+        while pages < max_pages:
+            try:
+                if cursor:
+                    resp = self.rest_client.agent_api_messages.list_agent_messages(
+                        self.room_id, limit=100, cursor=cursor, sort_order="desc"
+                    )
+                else:
+                    resp = self.rest_client.agent_api_messages.list_agent_messages(
+                        self.room_id, limit=100, sort_order="desc"
+                    )
+                batch = resp.data or []
+                messages.extend(batch)
+                pages += 1
+                if not resp.metadata or not resp.metadata.has_more or not batch:
+                    break
+                cursor = resp.metadata.next_cursor
+            except Exception as e:
+                logger.warning(f"Error listing messages in room: {e}")
+                break
+        return messages
 
     async def step(self) -> list[str]:
         """Polls for new tickets and forwards them to worker or blocks them."""

@@ -12,3 +12,8 @@ Requests from Nikhil for changes to Nehaa-owned files or components.
 - `2026-11-23T07:37:00Z` [Gate Circuit Breaker / api/gate.py] Added consecutive error counter to `LyzrGate` that raises `RuntimeError("INVALID-GATE: 3 consecutive REAL Lyzr calls returned ERROR")` if 3 consecutive live Lyzr API requests return non-200 or timeout, ensuring runs fail closed without masking credit exhaustion or outages.
 - `2026-11-23T11:58:00Z` [Hot-Reload Patch Delivery / arena/rollback.py & arena/referee.py] Removed `await referee.sandbox.restart()` from `apply_or_rollback` during patch proposal, rejection, and rollback. Patches and rollbacks are now delivered hot and verified via `patch_applied.json` without restarting the sandbox microVM, preventing worker process eviction during the Blue defense turn.
 - `2026-11-23T12:35:00Z` [Pre-Round Liveness & Transport / arena/referee.py] Added `check_worker_liveness(round_id)` before R0, R1, and R2 (sends a 30s benign ping, redeploys once on failure, raises INVALID-WORKER if down), added `transport` attribute assignment to `Results`, and passed `attacks_per_round` dynamically to `self.red.attacks_per_round`.
+
+### Request 2026-11-24: Paging support for BAND room message polling
+- **Files Modified**: `arena/transport_band.py`, `agents/dispatcher_band.py`, `agents/worker_band.py`
+- **Owner**: Nikhil
+- **Summary**: Updated `_fetch_room_messages()` and `_fetch_messages()` to support cursor-based pagination with `max_pages` parameter. Prevents messages beyond the initial 100 limit from being dropped during high-volume test runs in long-lived rooms.

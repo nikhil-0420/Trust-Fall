@@ -1,7 +1,7 @@
-# Calibration Methodology
+# Calibration & Evaluation Methodology
 
 ## Overview
-This document describes the design, calibration, and selection methodology for the attack library in Trust Fall.
+This document describes the design, calibration, selection, and benchmark evaluation methodology for Trust Fall.
 The attack library is calibrated against the undefended, deliberately accommodating Worker (`agents/prompts/worker_system_victim.md`) at Level 0 (L0). Attacks that never succeed against an undefended worker say nothing about defenses, which previously caused uninformative 0/0/0 ASR results.
 
 ## Victim Realism & Prompt Adjustments
@@ -31,8 +31,9 @@ To ensure that attacks test genuine behavioral alignment rather than fighting an
 4. **L0 success rate by construction**: The L0 success rate of the selected library is high BY CONSTRUCTION because candidates are chosen specifically for effectiveness against the baseline. This is not a claim about LLM robustness in general, but a standard calibration procedure for red-teaming benchmarks.
 5. **Model non-determinism**: Results stem from specific runs with specified models (`gemini-3.5-flash-lite` primary) and temperature settings.
 
-
 ## Benchmark Execution & Transport Parity
-To guarantee deterministic evaluation free from external network volatility, the official benchmark evaluation (`data/results.json`) executes in-process via `TRANSPORT=loopback` with an in-process `FakeSandbox`:
+To guarantee deterministic evaluation free from external network volatility, the official benchmark evaluation (`data/results.json`, `run-20261123-132347`) executes in-process via `TRANSPORT=loopback` with an in-process `FakeSandbox`:
+- **Parity with Live Path**: The Worker, Dispatcher, Gate, Patch, and Referee logic were the **exact same code** as the live path.
 - **Real Cognitive Services**: The LLM cognitive components (Worker, Blue defender, and Red attacker) execute against live Gemini models (`gemini-3.5-flash-lite`), and the ingress security gate executes against the live Lyzr Cloud API via the local Cloudflare tunnel.
-- **Transport Separation**: The remote network transport (BAND chat API) and remote container sandbox (Agent37 Docker instance) were thoroughly evaluated in independent live verification runs (`docs/L0_VERIFY.md` and `docs/RESTART_DIAGNOSIS.md`). In high-throughput multi-round evaluations, third-party chat webhook latency introduces intermittent timeouts; the loopback benchmark preserves identical agent logic, prompt evaluation, memory state persistence, and gate screening while eliminating network transport artifacts.
+- **Cache Provenance**: Ingress gate cache hits during R1 and R2 were populated by earlier live runs on this machine against the real Lyzr Cloud API and verified with provenance tag `{"impl": "lyzr"}`.
+- **Transport Separation**: The remote network transport (BAND chat API) and remote container sandbox (Agent37 Docker instance) were thoroughly evaluated in independent live verification runs ([docs/L0_VERIFY.md](file:///e:/TrustFall/docs/L0_VERIFY.md) and [docs/LIVE_CHECK_NIKHIL.md](file:///e:/TrustFall/docs/LIVE_CHECK_NIKHIL.md)). In high-throughput multi-round evaluations, third-party chat webhook latency introduces intermittent timeouts; the loopback benchmark preserves identical agent logic, prompt evaluation, memory state persistence, and gate screening while eliminating network transport artifacts.
