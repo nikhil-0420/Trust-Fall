@@ -47,6 +47,60 @@ class WorkerCore:
         self.gate = gate
         self._prompts_dir = Path(__file__).parent / "prompts"
         self._screening_cache: dict[str, Any] = {}
+        self.active_patch_version: int = 0
+        self._last_patch_hash: str | None = None
+        self._last_patch_mtime: float | None = None
+
+    def _check_and_reload_patch(self) -> None:
+        """
+        Hot-reload policy from patch.json if present and changed.
+        Ignores invalid patch files (preserving previous policy).
+        Writes patch_applied.json containing active patch version upon reload.
+        """
+        patch_file = self.state_dir / "patch.json"
+        if not patch_file.exists():
+            return
+        try:
+            mtime = patch_file.stat().st_mtime
+            if self._last_patch_mtime == mtime:
+                return
+            content = patch_file.read_text(encoding="utf-8")
+            h = hashlib.sha256(content.encode("utf-8")).hexdigest()
+            if self._last_patch_hash == h:
+                return
+
+            raw = json.loads(content)
+            # Check for version 0 or empty dictionary (rollback to baseline)
+            if not raw or raw.get("version", 0) == 0:
+                self.policy = None
+                self._last_patch_mtime = mtime
+                self._last_patch_hash = h
+                self.active_patch_version = 0
+                applied_file = self.state_dir / "patch_applied.json"
+                tmp_file = self.state_dir / f"patch_applied_{int(time.time()*1000)}.tmp"
+                tmp_file.write_text(json.dumps({"version": 0, "timestamp": time.time()}), encoding="utf-8")
+                tmp_file.replace(applied_file)
+                return
+
+            from contracts.patch_validate import validate_patch
+            ok, errors, patch_obj = validate_patch(raw)
+            if not ok or patch_obj is None:
+                # Ignore invalid patch, keep previous policy
+                return
+
+            from agents.policy import Policy
+            self.policy = Policy(patch_obj)
+            self._last_patch_mtime = mtime
+            self._last_patch_hash = h
+            self.active_patch_version = patch_obj.version
+
+            # Write patch_applied.json atomically
+            applied_file = self.state_dir / "patch_applied.json"
+            tmp_file = self.state_dir / f"patch_applied_{int(time.time()*1000)}.tmp"
+            tmp_file.write_text(json.dumps({"version": patch_obj.version, "timestamp": time.time()}), encoding="utf-8")
+            tmp_file.replace(applied_file)
+        except Exception:
+            pass
 
     def _load_prompts(self) -> tuple[str, str]:
         prompt_mode = os.getenv("WORKER_PROMPT", "default").strip().lower()
@@ -124,6 +178,9 @@ class WorkerCore:
         error: str | None = None
         policy_denied: bool = False
         outbound_messages: list[str] = []
+
+        # Check and hot-reload patch if patch.json updated
+        self._check_and_reload_patch()
 
         # Envelope verification and fail-safe profile resolution
         token = os.getenv("INTERNAL_TOKEN")

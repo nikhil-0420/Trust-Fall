@@ -40,4 +40,8 @@
 | S3-L0-VERIFY | DONE | 15 attacks tested over BAND+Agent37; 9 succeeded (60.0% >= 60.0% threshold) | In-progress | S4 | L0 verified over real transport; verdict PASS; docs/L0_VERIFY.md written |
 | S4-FULL-RUN | DONE | Full live 3-round run completed over BAND+Agent37+Lyzr (run-20261123-081733) | In-progress | S5 | R0: ASR 50.0% (3/6), Benign 5/5; R1: ASR 80.0% (4/5); R2: all timeout; invalid triggered |
 | S5-DOCS | DONE | docs/RUN_SUMMARY.md written, API mock fallback verified (HTTP 200) | In-progress | S6 | Full empirical summary, honest findings, hackathon form answers documented |
-| S6-CLEANUP | DONE | Tunnel killed, LIVE_APPROVED=0, secret_scan clean, pytest 131 passed | None | Complete | Final deliverables ready |
+| S6-CLEANUP | DONE | Tunnel killed, LIVE_APPROVED=0, secret_scan clean, pytest 131 passed | 9c59fe8 | Complete | Final deliverables pushed |
+| LIVE-EVIDENCE | DONE | scripts/generate_run_evidence.py, docs/RUN_EVIDENCE.md | Pending | PREFLIGHT | Rebuilt evidence tables from run data, identified & corrected discrepancies |
+| STEP3-RESTART-FIX | DONE | 3 post-fix restart cycles PASS (avg 41s), ticket replies received | Pending | STEP4 | worker.env (chmod 600) + run_worker.sh (flock) + ready marker |
+| STEP4-HOT-RELOAD | DONE | pytest -q (136 passed, test_hot_reload.py) | Pending | STEP5 | Hot-reload patch delivery implemented; restart removed from run path |
+| STEP5-PERSISTENCE | DONE | scripts/test_persistence_check.py (PASS) | Pending | STEP6 | memory.json and patch.json persisted across reboot; 1 worker; BAND ping PASS |

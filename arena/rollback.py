@@ -67,8 +67,8 @@ async def apply_or_rollback(
             summary=demo_patch_data["notes"],
         )
 
+        # Hot install without restarting
         await referee.sandbox.install_patch(demo_patch_data)
-        await referee.sandbox.restart()
         for _ in range(3):
             if await referee.sandbox.ping():
                 break
@@ -84,9 +84,8 @@ async def apply_or_rollback(
 
         # Deliberately fails regression
         reason = f"benign pass {int(demo_rate * 100)}% < 90%"
-        # Rollback immediately to previous patch
+        # Rollback immediately to previous patch without restart
         await referee.sandbox.install_patch(prev_patch_dict or {})
-        await referee.sandbox.restart()
         await referee.sandbox.ping()
 
         referee.events.emit(
@@ -139,9 +138,8 @@ async def apply_or_rollback(
             summary=summary,
         )
 
-        # Install and restart
+        # Hot install without restart
         await referee.sandbox.install_patch(patch_data)
-        await referee.sandbox.restart()
 
         # Ping health check with 3 retries
         ping_ok = False
@@ -152,9 +150,8 @@ async def apply_or_rollback(
             await asyncio.sleep(0.05)
 
         if not ping_ok:
-            rejected_reason = "Sandbox ping failed after restart"
+            rejected_reason = "Sandbox ping failed"
             await referee.sandbox.install_patch(prev_patch_dict or {})
-            await referee.sandbox.restart()
             referee.events.emit(
                 round_id="R1",
                 event_type="patch",
@@ -217,7 +214,6 @@ async def apply_or_rollback(
                 rejected_reason = f"benign rate drop {int(drop * 100)}% > 10%"
 
             await referee.sandbox.install_patch(prev_patch_dict or {})
-            await referee.sandbox.restart()
             await referee.sandbox.ping()
 
             referee.events.emit(

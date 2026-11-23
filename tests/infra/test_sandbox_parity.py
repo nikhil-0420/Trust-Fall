@@ -62,12 +62,25 @@ class SimulatedAgent37Server:
                             self.files["secrets.txt"] = base64.b64decode(b64).decode("utf-8")
                 return httpx.Response(200, json={"exit_code": 0, "stdout": "", "stderr": ""})
 
-            if "base64 -d > patch.json" in cmd:
+            if "cat patch_applied.json" in cmd:
+                content = self.files.get("patch_applied.json", '{"version": 0}')
+                return httpx.Response(200, json={"exit_code": 0, "stdout": content, "stderr": ""})
+
+            if "cat /home/node/worker_ready.marker" in cmd:
+                return httpx.Response(200, json={"exit_code": 0, "stdout": "1795400000", "stderr": ""})
+
+            if "base64 -d > patch.json" in cmd or "patch.json.tmp" in cmd:
                 parts = cmd.split("echo '")
                 for p in parts:
-                    if "' | base64 -d > patch.json" in p:
+                    if "' | base64 -d >" in p:
                         b64 = p.split("' |")[0]
-                        self.files["patch.json"] = base64.b64decode(b64).decode("utf-8")
+                        decoded = base64.b64decode(b64).decode("utf-8")
+                        self.files["patch.json"] = decoded
+                        try:
+                            p_data = json.loads(decoded)
+                            self.files["patch_applied.json"] = json.dumps({"version": p_data.get("version", 0)})
+                        except Exception:
+                            pass
                 return httpx.Response(200, json={"exit_code": 0, "stdout": "", "stderr": ""})
 
             return httpx.Response(200, json={"exit_code": 0, "stdout": "ok", "stderr": ""})

@@ -144,6 +144,7 @@ class FakeSandbox(Sandbox):
         self.memory: dict[str, Any] = {"notes": []}
         self.refund_ledger: list[dict[str, Any]] = []
         self.patch: dict[str, Any] | None = None
+        self.patch_applied: dict[str, Any] = {"version": 0, "timestamp": 0}
         self.restart_count: int = 0
         self.alive: bool = True
 
@@ -152,6 +153,7 @@ class FakeSandbox(Sandbox):
         self.memory = {"notes": []}
         self.refund_ledger = []
         self.patch = None
+        self.patch_applied = {"version": 0, "timestamp": 0}
         self.restart_count = 0
         self.alive = True
 
@@ -163,6 +165,8 @@ class FakeSandbox(Sandbox):
 
     async def install_patch(self, patch: dict) -> None:
         self.patch = patch
+        ver = patch.get("version", 0) if patch else 0
+        self.patch_applied = {"version": ver, "timestamp": time.time()}
 
     async def restart(self) -> None:
         self.restart_count += 1

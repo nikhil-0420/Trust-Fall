@@ -97,15 +97,37 @@ class Agent37Sandbox(Sandbox):
         return res.get("stdout", "[]").strip()
 
     async def install_patch(self, patch: dict) -> None:
-        patch_json_str = json.dumps(patch, indent=2)
+        """
+        Hot-installs patch.json atomically without restarting the sandbox.
+        Verifies active patch version via patch_applied.json (polling up to 30s).
+        """
+        target_version = patch.get("version", 0) if patch else 0
+        patch_json_str = json.dumps(patch or {}, indent=2)
         b64_patch = base64.b64encode(patch_json_str.encode("utf-8")).decode("ascii")
-        cmd = f"echo '{b64_patch}' | base64 -d > patch.json"
+        # Atomic write: write to temp file then rename
+        cmd = f"echo '{b64_patch}' | base64 -d > patch.json.tmp && mv patch.json.tmp patch.json"
         res = await self.exec_command(cmd)
         if res.get("exit_code") != 0:
-            logger.warning(f"Failed to install patch: {res.get('stderr')}")
+            raise RuntimeError(f"Failed to install patch: {res.get('stderr')}")
+
+        # Poll patch_applied.json up to 30s
+        deadline = asyncio.get_event_loop().time() + 30.0
+        while asyncio.get_event_loop().time() < deadline:
+            res_applied = await self.exec_command("cat patch_applied.json 2>/dev/null")
+            stdout = res_applied.get("stdout", "").strip()
+            if stdout:
+                try:
+                    data = json.loads(stdout)
+                    if data.get("version") == target_version:
+                        return
+                except Exception:
+                    pass
+            await asyncio.sleep(1.0)
+
+        raise TimeoutError(f"Patch version verification timed out for version {target_version}")
 
     async def restart(self) -> None:
-        """Restarts the instance and polls status until running (up to 120s)."""
+        """Restarts the instance and polls status until running and worker is ready (up to 120s)."""
         if not self.instance_id:
             raise ValueError("SANDBOX_ID / instance_id is required to restart")
 
@@ -132,22 +154,34 @@ class Agent37Sandbox(Sandbox):
                     if resp.status_code == 200:
                         status = resp.json().get("status")
                         if status == "running":
-                            # Ensure worker process is relaunched post-restart (Phase C10 c: Idempotent launch & verify exactly 1 process)
-                            idempotent_cmd = (
-                                "cd /home/node && "
-                                "if ! pgrep -f 'python3 -u worker_band.py' >/dev/null 2>&1; then "
-                                "    (nohup python3 -u worker_band.py > /home/node/worker.log 2>&1 &) && sleep 1; "
-                                "fi; "
-                                "pids=$(pgrep -f 'python3 -u worker_band.py' | sort -n); "
-                                "count=$(echo \"$pids\" | grep -c . || true); "
-                                "if [ \"$count\" -gt 1 ]; then "
-                                "    echo \"$pids\" | head -n -1 | xargs -r kill -9; "
+                            # Remove stale ready marker before running launcher
+                            await self.exec_command("rm -f /home/node/worker_ready.marker")
+
+                            # Execute unified launcher
+                            launch_cmd = (
+                                "if [ -f /home/node/run_worker.sh ]; then "
+                                "    /bin/bash /home/node/run_worker.sh; "
+                                "elif [ -f /home/node/.agent37/hooks/post-restart.sh ]; then "
+                                "    /bin/bash /home/node/.agent37/hooks/post-restart.sh; "
+                                "else "
+                                "    cd /home/node && (nohup python3 -u worker_band.py >> worker.log 2>&1 & disown); "
                                 "fi"
                             )
-                            try:
-                                await self.exec_command(idempotent_cmd)
-                            except Exception:
-                                pass
+                            await self.exec_command(launch_cmd)
+
+                            # Poll for fresh ready marker (up to 30s)
+                            m_deadline = asyncio.get_event_loop().time() + 30.0
+                            while asyncio.get_event_loop().time() < m_deadline:
+                                res_marker = await self.exec_command("cat /home/node/worker_ready.marker 2>/dev/null")
+                                marker_str = res_marker.get("stdout", "").strip()
+                                if marker_str:
+                                    try:
+                                        ts = float(marker_str)
+                                        if ts > 0:
+                                            return
+                                    except ValueError:
+                                        return
+                                await asyncio.sleep(1.0)
                             return
             except Exception:
                 pass

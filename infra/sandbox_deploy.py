@@ -7,6 +7,7 @@ and launches worker in background.
 import base64
 import os
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -88,15 +89,25 @@ def deploy_worker() -> str:
     print(f"Deploying Worker to Agent37 sandbox: {inst_id}...")
 
     with httpx.Client(timeout=120.0) as client:
-        # 1. Install dependencies
-        print("Installing python dependencies inside sandbox...")
-        deps_cmd = "pip3 install --quiet 'band-sdk[langgraph]' pydantic pyyaml python-dotenv google-genai httpx"
-        r_deps = client.post(
+        # 1. Install dependencies if not already present
+        chk_resp = client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": deps_cmd},
+            json={"command": "python3 -c 'import band_rest, google.genai, dotenv' 2>/dev/null"},
+            timeout=15.0,
         )
-        print("Dependencies install exit code:", r_deps.json().get("exit_code"))
+        if chk_resp.json().get("exit_code") != 0:
+            print("Installing python dependencies inside sandbox...")
+            deps_cmd = "pip3 install --quiet 'band-sdk[langgraph]' pydantic pyyaml python-dotenv google-genai httpx"
+            r_deps = client.post(
+                f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
+                headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
+                json={"command": deps_cmd},
+                timeout=120.0,
+            )
+            print("Dependencies install exit code:", r_deps.json().get("exit_code"))
+        else:
+            print("Dependencies already installed inside sandbox.")
 
         # 2. Upload worker package files
         root = Path(__file__).resolve().parent.parent
@@ -127,7 +138,10 @@ def deploy_worker() -> str:
         config_path = sync_band_config()
         files_to_upload.append((config_path, "agent_config.yaml"))
 
-        # Upload boot hook
+        # Upload unified launcher and boot hook
+        launcher_path = root / "infra" / "scripts" / "run_worker.sh"
+        files_to_upload.append((launcher_path, "/home/node/run_worker.sh"))
+
         hook_path = root / "infra" / "hooks" / "post-restart.sh"
         files_to_upload.append((hook_path, "/home/node/.agent37/hooks/post-restart.sh"))
 
@@ -135,24 +149,52 @@ def deploy_worker() -> str:
             if local_p.exists():
                 upload_file_b64(client, inst_id, key, local_p, remote_p)
 
-        # Make boot hook executable
+        # 3. Create persistent, chmod 600 worker.env without printing values
+        env_vars = [
+            ("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "")),
+            ("BAND_AGENT_B_ID", os.getenv("BAND_AGENT_B_ID", "")),
+            ("BAND_AGENT_B_KEY", os.getenv("BAND_AGENT_B_KEY", "")),
+            ("BAND_ROOM_ID", os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")),
+            ("INTERNAL_TOKEN", os.getenv("INTERNAL_TOKEN", "")),
+            ("MODEL_NAME", os.getenv("MODEL_NAME", "gemini-3.5-flash-lite")),
+            ("WORKER_PROMPT", os.getenv("WORKER_PROMPT", "victim")),
+            ("STATE_DIR", "."),
+            ("GATE_URL", os.getenv("GATE_URL", "")),
+            ("USE_MOCKS", "0"),
+            ("LIVE_APPROVED", "1"),
+            ("LLM_IMPL", "gemini"),
+        ]
+        env_content = "\n".join(f"export {k}='{v}'" for k, v in env_vars if v) + "\n"
+        b64_env = base64.b64encode(env_content.encode("utf-8")).decode("ascii")
+        cmd_env = f"mkdir -p /home/node/.trustfall && echo '{b64_env}' | base64 -d > /home/node/.trustfall/worker.env && chmod 600 /home/node/.trustfall/worker.env"
         client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": "chmod +x /home/node/.agent37/hooks/post-restart.sh || true"},
+            json={"command": cmd_env},
+            timeout=30.0,
         )
 
-        # 3. Start worker process
+        # Make scripts executable
         client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": "pkill -9 -f python3 2>/dev/null || true"},
+            json={"command": "chmod +x /home/node/run_worker.sh /home/node/.agent37/hooks/post-restart.sh 2>/dev/null || true"},
+            timeout=30.0,
         )
-        start_cmd = "cd /home/node && (python3 -u worker_band.py > worker.log 2>&1 &) && sleep 1; ps aux | grep python"
+
+        # 4. Start worker process using unified launcher
+        client.post(
+            f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
+            headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
+            json={"command": "pkill -9 -f python3 2>/dev/null || true; sleep 1"},
+            timeout=30.0,
+        )
+        start_cmd = "/bin/bash /home/node/run_worker.sh && sleep 2; ps aux | grep python"
         r_start = client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
             json={"command": start_cmd},
+            timeout=30.0,
         )
         print("Start result:\n", r_start.json().get("stdout", ""))
 

@@ -9,6 +9,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -82,6 +83,13 @@ class BandWorkerAgent:
             return []
 
     async def step(self) -> list[str]:
+        # Hot-reload policy if patch.json changed
+        if hasattr(self.worker_core, "_check_and_reload_patch"):
+            try:
+                self.worker_core._check_and_reload_patch()
+            except Exception:
+                pass
+
         messages = self._fetch_messages()
         handled = []
         for msg in messages:
@@ -107,6 +115,12 @@ class BandWorkerAgent:
             if m_id:
                 self.processed_msg_ids.add(m_id)
         self.ready = True
+        try:
+            marker_p = Path(os.getenv("STATE_DIR", ".")) / "worker_ready.marker"
+            marker_p.write_text(str(time.time()), encoding="utf-8")
+            logger.info("Wrote worker_ready.marker")
+        except Exception as e:
+            logger.warning(f"Failed to write worker_ready.marker: {e}")
 
         while self.is_running:
             try:
