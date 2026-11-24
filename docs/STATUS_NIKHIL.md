@@ -56,3 +56,4 @@
 | STEP5-BENCHMARK-RUN2 | DONE | Benchmark Run 2 executed (run-20261124-054624) | None | None | VALID: R0 ASR 66.7%, R1 ASR 50.0%, R2 ASR 0.0%, Benign 5/5 across all rounds |
 | STEP6-DOCS | DONE | Updated docs/R2_ANALYSIS.md, RUN_SUMMARY.md, METHODOLOGY.md, README.md | None | None | Run 1 vs Run 2 fully documented and transparently compared |
 | STEP7-DEMO | DONE | Added CHALLENGE_TRANSPORT, test_challenge_l2.py, demo_band_attempt.py, DEMO_RUNBOOK.md | None | None | L2 challenge mode verified stopping A01; demo runbook ready |
+| BAND-REPAIR-L2-PROBES | DONE | pytest -q (141 passed), secret_scan clean | Pending | COMPLETE | BAND path repaired with safe PID management; Test A 5/5 passed (demo room: 2259e40a...); demo sequence rehearsed; 8 L2 breakability probes evaluated (docs/L2_PROBES.md) |

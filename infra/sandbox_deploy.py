@@ -183,10 +183,15 @@ def deploy_worker() -> str:
         )
 
         # 4. Start worker process using unified launcher
+        safe_kill_cmd = (
+            "if [ -f /home/node/worker.pid ]; then kill -9 $(cat /home/node/worker.pid) 2>/dev/null || true; fi; "
+            "for pid in $(ps aux | grep '[w]orker_band.py' | awk '{print $2}'); do kill -9 $pid 2>/dev/null || true; done; "
+            "sleep 1"
+        )
         client.post(
             f"https://sandbox.agent37.app/v1/instances/{inst_id}/exec",
             headers={"X-Agent37-Key": key, "Content-Type": "application/json"},
-            json={"command": "pkill -9 -f python3 2>/dev/null || true; sleep 1"},
+            json={"command": safe_kill_cmd},
             timeout=30.0,
         )
         start_cmd = "/bin/bash /home/node/run_worker.sh && sleep 2; ps aux | grep python"

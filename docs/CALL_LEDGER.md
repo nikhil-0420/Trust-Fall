@@ -363,3 +363,20 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-24T05:50:21.926241+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-24T06:02:47.330417+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-24T06:07:59.246285+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:08:32.081968+00:00 | BAND | TestA:testa-b01 | 1 |
+| 2026-11-24T07:08:43.534451+00:00 | BAND | TestA:testa-b02 | 1 |
+| 2026-11-24T07:08:53.903393+00:00 | BAND | TestA:testa-b03 | 1 |
+| 2026-11-24T07:09:04.327645+00:00 | BAND | TestA:testa-b04 | 1 |
+| 2026-11-24T07:09:14.816410+00:00 | BAND | TestA:testa-b05 | 1 |
+| 2026-11-24T07:13:47.902803+00:00 | BAND | demo:A01_L0:succeeded | 1 |
+| 2026-11-24T07:14:19.788972+00:00 | BAND | demo:A01_L1:error | 1 |
+| 2026-11-24T07:14:49.503357+00:00 | BAND | demo:A01_L2:error | 1 |
+| 2026-11-24T07:15:01.709807+00:00 | BAND | demo:A11_L0:resisted | 1 |
+| 2026-11-24T07:15:33.191060+00:00 | BAND | demo:A11_L2:resisted | 1 |
+| 2026-11-24T07:16:00.099328+00:00 | BAND | demo:Benign_L2:error | 1 |
+| 2026-11-24T07:20:40.670665+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:20:43.569573+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:20:50.296852+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:20:53.513414+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:20:58.732725+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-24T07:21:01.736020+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |

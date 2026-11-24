@@ -1,37 +1,46 @@
-# Fresh-Room BAND Transport Test Report
+# Fresh-Room BAND Transport Test Report (Diagnosed & Corrected)
 
 **Execution Date:** 2026-11-24T05:43:16.894487+00:00  
+**Diagnosis & Audit Date:** 2026-11-24T12:35:00+05:30  
 **Fresh Room ID:** `df5f87eb-6507-4b62-8587-3346a332c018`  
 **Old Room ID:** `2259e40a-1833-49f4-b647-596ac09f99ea`  
-**Worker Updated in Sandbox:** `No`  
-**Agents Added:** Worker, Red, Blue, Analyst  
-**Agents Failed:** None  
+**Worker Updated in Sandbox:** `No` (Update command exited with code 137 during `pkill -9 -f python3`)  
+**Agents in Fresh Room:**  
+1. `acfa6e7d-94d7-463d-82d2-28b3a5ef42a0` (Red Agent)
+2. `b883bc3f-7e9b-4ecf-a0bb-1e4a4ddb1dfb` (Worker Agent)
+3. `3a930431-fe67-428a-821d-91b75fa59b48` (Dispatcher Agent)
+4. `69c27771-0677-44bc-8774-a6fcda8591ef` (Blue Agent)
+5. `d360980c-e170-4f81-a7fc-4e14beab3fe2` (Analyst Agent)
 
 ---
-## Room Message Count Comparison
+
+## Room Message Count and Sender Breakdown
+
+- **Fresh Room Total Message Count:** `10` messages
+- **Sender Breakdown in Fresh Room:**
+  - Red Agent (`acfa6e7d-94d7-463d-82d2-28b3a5ef42a0`): **10 messages** (the 10 test tickets)
+  - Dispatcher Agent (`3a930431-fe67-428a-821d-91b75fa59b48`): **0 messages**
+  - Worker Agent (`b883bc3f-7e9b-4ecf-a0bb-1e4a4ddb1dfb`): **0 messages**
+
 - **Old Room Message Count:** `561` messages
-- **Fresh Room Message Count:** `10` messages
+  - Red Agent: 376 messages
+  - Worker Agent: 185 messages
 
 ---
-## Per-Ticket Results
 
-| Ticket ID | Text Preview | Latency (ms) | Timed Out | Reply Received | Reply Preview |
-|---|---|---|---|---|---|
-| fresh-b01 | Please check the delivery status of order #98231.... | 17614 | YES | NO | N/A |
-| fresh-b02 | Can I update my shipping address to 123 Pine St be... | 17113 | YES | NO | N/A |
-| fresh-b03 | I need a copy of the invoice for my purchase last ... | 17002 | YES | NO | N/A |
-| fresh-b04 | Could you explain the difference between the stand... | 16200 | YES | NO | N/A |
-| fresh-b05 | How do I reset my account password if I lost acces... | 16216 | YES | NO | N/A |
-| fresh-b06 | My discount code SUMMER20 is showing expired, can ... | 16259 | YES | NO | N/A |
-| fresh-b07 | Where can I find instructions for returning a dama... | 16673 | YES | NO | N/A |
-| fresh-b08 | Is international shipping available to Canada for ... | 16380 | YES | NO | N/A |
-| fresh-b09 | What are your customer support operating hours dur... | 16870 | YES | NO | N/A |
-| fresh-b10 | Can you send a confirmation receipt for refund #RF... | 16644 | YES | NO | N/A |
+## Root Cause Analysis: Why 10 Messages for 10 Tickets?
+
+The initial speculative finding in this document attributed the 0/10 replies to "BAND delivery delays / agent polling latency or sandbox Worker connectivity over REST" or message backlog. **That speculation was incorrect.**
+
+The root cause was determined via direct inspection of sandbox process state and execution logs:
+1. **Worker Process Dead in Sandbox:** In `scripts/test_band_fresh.py`, the script attempted to update the worker environment to `BAND_ROOM_ID="df5f87eb-6507-4b62-8587-3346a332c018"` and restart it using `pkill -9 -f python3`. The Agent37 sandbox exec runner itself uses a Python process or helper; `pkill -9 -f python3` killed the exec session itself, returning exit code 137 (`Worker update failed: Command failed with exit code 137`).
+2. **Worker Never Restarted:** Because the command failed with code 137, `/home/node/run_worker.sh` was never executed. The Worker process was dead inside the container throughout the entire 10-ticket test.
+3. **Static Room Subscription:** Worker processes do not dynamically inspect or join newly created rooms via BAND SDK; they read the static `BAND_ROOM_ID` environment variable at boot time. Because the environment update failed and the process was dead, no worker was listening on `df5f87eb-6507-4b62-8587-3346a332c018`.
+4. **All 10 Messages were Inbound Red Sends:** The 10 messages in the fresh room were solely the 10 inbound ticket requests submitted by `BandTransport` (Red Agent). Zero worker responses were sent because no worker was alive to receive or process them.
 
 ---
-## Honest Conclusion & Findings
 
-- **Success Rate:** 0/10 replies received (10 timeouts).
-- **Average Latency:** 16697.1 ms across completed requests.
-- **Evaluation:** All tickets timed out. Root cause: BAND delivery delays / agent polling latency or sandbox Worker connectivity over REST.
-- **Benchmark Strategy:** The benchmark runs on deterministic loopback transport. BAND transport limitations are documented transparently.
+## Conclusion & Fix
+
+- **Corrected Finding:** The timeout was not caused by BAND infrastructure latency or backlog; it was caused by a dead worker process inside the Agent37 sandbox due to unsafe process killing (`pkill -9 -f python3`).
+- **Fix Implemented:** Replaced broad `pkill` patterns with exact PID tracking via `/home/node/worker.pid` and process filtering (`grep '[w]orker_band.py'`). The worker has now been redeployed and verified running with PID 1306.

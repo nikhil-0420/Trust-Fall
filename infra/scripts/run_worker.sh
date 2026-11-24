@@ -20,7 +20,7 @@ export WORKER_PROMPT="${WORKER_PROMPT:-victim}"
 export MODEL_NAME="${MODEL_NAME:-gemini-3.5-flash-lite}"
 
 # If worker is already active, do not relaunch
-if pgrep -f "python3.*worker_band.py" >/dev/null 2>&1; then
+if ps aux | grep '[w]orker_band.py' >/dev/null 2>&1; then
     echo "[launcher] worker_band.py is already active."
     exit 0
 fi
@@ -30,4 +30,5 @@ rm -f /home/node/worker_ready.marker
 
 echo "[launcher] Starting worker_band.py at $(date -u)" >> /home/node/worker_launcher.log
 nohup python3 -u worker_band.py >> /home/node/worker.log 2>&1 &
+echo $! > /home/node/worker.pid
 disown
