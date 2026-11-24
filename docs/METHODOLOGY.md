@@ -32,7 +32,7 @@ To ensure that attacks test genuine behavioral alignment rather than fighting an
 5. **Model non-determinism**: Results stem from specific runs with specified models (`gemini-3.5-flash-lite` primary) and temperature settings.
 
 ## Benchmark Execution & Transport Parity
-To guarantee deterministic evaluation free from external network volatility, the official benchmark evaluation (`data/results.json`, `run-20261123-132347`) executes in-process via `TRANSPORT=loopback` with an in-process `FakeSandbox`:
+To guarantee deterministic evaluation free from external network volatility, the official benchmark evaluation (`data/results.json`, Run 2 `run-20261124-054624` and archived Run 1 `run-20261123-132347`) executes in-process via `TRANSPORT=loopback` with an in-process `FakeSandbox`:
 - **Parity with Live Path**: The Worker, Dispatcher, Gate, Patch, and Referee logic were the **exact same code** as the live path.
 - **Real Cognitive Services**: The LLM cognitive components (Worker, Blue defender, and Red attacker) execute against live Gemini models (`gemini-3.5-flash-lite`), and the ingress security gate executes against the live Lyzr Cloud API via the local Cloudflare tunnel.
 - **Cache Provenance**: Ingress gate cache hits during R1 and R2 were populated by earlier live runs on this machine against the real Lyzr Cloud API and verified with provenance tag `{"impl": "lyzr"}`.

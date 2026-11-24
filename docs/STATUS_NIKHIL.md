@@ -51,3 +51,8 @@
 | ANALYSIS-ONLY | DONE | pytest -q (136 passed), secret scan clean | Pending | COMPLETE | R2 residuals analyzed (docs/R2_ANALYSIS.md); BAND timeout root cause diagnosed (docs/BAND_TIMEOUT_DIAGNOSIS.md); pagination fix added; LIVE SKIPPED |
 | STEP1-ARCHIVE | DONE | Preserved Run 1 in data/archive/run1/ | None | None | 7 files preserved (results.json, 3 events, 3 reports) |
 | STEP2-FIX | DONE | Added secret format spec to Blue & self-test to rollback | None | None | 140 tests passing, self-test verified with 4 unit tests |
+| STEP3-BAND-TEST | DONE | Informational fresh-room test completed (docs/BAND_FRESH_ROOM_TEST.md) | None | None | Room created, 4 agents added, 10 tickets measured, timeouts documented |
+| STEP4-TUNNEL | DONE | Tunnel started & health verified (localhost:8000/api/health -> 200) | None | None | GATE_URL updated in .env to active trycloudflare.com tunnel |
+| STEP5-BENCHMARK-RUN2 | DONE | Benchmark Run 2 executed (run-20261124-054624) | None | None | VALID: R0 ASR 66.7%, R1 ASR 50.0%, R2 ASR 0.0%, Benign 5/5 across all rounds |
+| STEP6-DOCS | DONE | Updated docs/R2_ANALYSIS.md, RUN_SUMMARY.md, METHODOLOGY.md, README.md | None | None | Run 1 vs Run 2 fully documented and transparently compared |
+| STEP7-DEMO | DONE | Added CHALLENGE_TRANSPORT, test_challenge_l2.py, demo_band_attempt.py, DEMO_RUNBOOK.md | None | None | L2 challenge mode verified stopping A01; demo runbook ready |

@@ -7,6 +7,7 @@ Owner: Nehaa (WS-D D5, D6, D8)
 import asyncio
 import html
 import json
+import os
 import re
 import secrets
 import sqlite3
@@ -232,6 +233,24 @@ def load_presets() -> list[dict[str, Any]]:
     return presets
 
 
+def get_last_applied_patch() -> dict[str, Any] | None:
+    """Retrieves the last applied patch from results.json for L2 challenge mode."""
+    results_path = Path("data/results.json")
+    if not results_path.exists():
+        results_path = Path("data/mock/results.json")
+    if results_path.exists():
+        try:
+            with open(results_path, "r", encoding="utf-8") as f:
+                res = json.load(f)
+            patches = res.get("patches", [])
+            for p in reversed(patches):
+                if p.get("status") == "applied" and p.get("patch"):
+                    return p.get("patch")
+        except Exception:
+            pass
+    return None
+
+
 # ------------------------------------------------------------------------------
 # Challenge Attempt State & Queue Management
 # ------------------------------------------------------------------------------
@@ -394,8 +413,28 @@ class ChallengeManager:
 
         # 2. Live challenge execution path
         sandbox = get_sandbox()
-        transport = get_transport()
         gate = get_gate()
+
+        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in ("1", "true", "yes")
+        challenge_transport = os.getenv("CHALLENGE_TRANSPORT", "").strip().lower()
+        if not challenge_transport:
+            challenge_transport = "mock" if use_mocks else "loopback"
+
+        if challenge_transport == "loopback":
+            from arena.transport_loopback import LoopbackTransport
+            transport = LoopbackTransport(
+                dispatcher=None,
+                worker=None,
+                state_dir=getattr(sandbox, "state_dir", Path("data/loopback_state")),
+            )
+            # Wire screening gate to Dispatcher in loopback transport
+            if hasattr(transport, "dispatcher") and transport.dispatcher is not None:
+                transport.dispatcher.gate = gate
+        elif challenge_transport == "band":
+            from arena.transport_band import BandTransport
+            transport = BandTransport(sandbox=sandbox)
+        else:
+            transport = get_transport()
 
         # Wire in-memory mock instances together
         if hasattr(transport, "sandbox"):
@@ -416,6 +455,27 @@ class ChallengeManager:
         # Fresh canary & clean sandbox state
         canary = f"CANARY-{secrets.token_hex(3)}-DEMO-ONLY"
         await sandbox.reset_state(canary)
+
+        # L2 challenge mode: load the last applied patch from results.json
+        if level == "L2":
+            last_patch = get_last_applied_patch()
+            if last_patch:
+                await sandbox.install_patch(last_patch)
+        else:
+            # Clear patch for L0/L1 baseline
+            if hasattr(sandbox, "state_dir") and sandbox.state_dir:
+                p_file = Path(sandbox.state_dir) / "patch.json"
+                if p_file.exists():
+                    try:
+                        p_file.unlink()
+                    except Exception:
+                        pass
+                app_file = Path(sandbox.state_dir) / "patch_applied.json"
+                if app_file.exists():
+                    try:
+                        app_file.unlink()
+                    except Exception:
+                        pass
 
         # Step: Gate screening
         start_t = time.perf_counter()

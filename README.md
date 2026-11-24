@@ -300,4 +300,17 @@ Outputs a public `https://*.trycloudflare.com` URL to provide to the frontend as
 
 ### 4. Benchmark Results
 
-`[TODO: To be populated from docs/RUN_SUMMARY.md once full live run completes]`
+Trust Fall's empirical benchmarks evaluate multi-round defense against calibrated prompt injection and persistent memory poisoning:
+
+- **Run 1 (`run-20261123-132347`, Archived in `data/archive/run1/`):**
+  - **R0 Baseline (L0):** ASR **66.7%** (8 / 12), Benign Pass Rate 100% (5 / 5).
+  - **R1 Lyzr Gate (L1):** ASR **50.0%** (6 / 12), Benign Pass Rate 100% (5 / 5).
+  - **R2 Patched (L2):** ASR **40.0%** (6 / 15: 44.4% known, 33.3% held-out).
+  - *Finding:* In Run 1, 4 subtle leak attacks succeeded in R2 because Blue's synthesized redaction regex (`SESSION-[A-Za-z0-9]+`) did not match the environment's session secret format (`CANARY-...`).
+- **Run 2 (`run-20261124-054624`, Primary Benchmark in `data/results.json`):**
+  - **R0 Baseline (L0):** ASR **66.7%** (8 / 12), Benign Pass Rate 100% (5 / 5).
+  - **R1 Lyzr Gate (L1):** ASR **50.0%** (6 / 12), Benign Pass Rate 100% (5 / 5).
+  - **R2 Patched (L2):** ASR **0.0%** (0 / 14: 0.0% known, 0.0% held-out), Benign Pass Rate 100% (5 / 5).
+  - *Finding:* Providing Blue with the secret format specification (`CANARY-<6 lowercase hex characters>-DEMO-ONLY`) and enforcing a deterministic 5-canary patch self-test before deployment eliminated 100% of residual leaks in R2 without degrading benign customer support utility.
+
+For complete per-round events, audit logs, and breakdown tables, see [docs/RUN_SUMMARY.md](docs/RUN_SUMMARY.md) and [docs/R2_ANALYSIS.md](docs/R2_ANALYSIS.md).

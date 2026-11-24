@@ -407,7 +407,17 @@ async def get_break_verdict(attempt_id: str) -> dict[str, Any]:
             detail={"error": {"code": "not_found", "message": f"Attempt {attempt_id} not found"}},
         )
 
-    if not state.done or not state.verdict:
+    if state.done and not state.verdict:
+        err_ev = next((e["data"] for e in state.events if e.get("event") == "error"), {})
+        return {
+            "status": "error",
+            "attempt_id": attempt_id,
+            "error": err_ev.get("reason", "unknown_error"),
+            "level": state.req_data.get("level"),
+            "goal": state.req_data.get("goal"),
+        }
+
+    if not state.done:
         return {
             "status": "running",
             "attempt_id": attempt_id,
