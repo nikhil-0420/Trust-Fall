@@ -203,6 +203,18 @@
             }
           ],
           "default": null
+        },
+        "self_test": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Self Test"
         }
       },
       "required": [

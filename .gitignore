@@ -23,6 +23,7 @@ web/build/
 # Data and logs
 data/runs/
 data/cache/
+data/loopback_state/
 *.db
 *.log
 

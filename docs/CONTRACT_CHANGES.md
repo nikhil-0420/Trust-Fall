@@ -16,3 +16,9 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-23 | C9 | Results | Added optional field `blue_input: Optional[str] = None` ("R1" or "R0+R1") | Yes |
 | 2026-11-23 | C10 | Results | Added optional field `components: Optional[Dict[str, Any]] = None` | Yes |
 | 2026-11-23 | S7 | Results | Added optional field `transport: Optional[str] = None` ("band" or "loopback") | Yes |
+
+### Change 2026-11-24: Add optional self_test to PatchEntry
+- **Model**: `contracts.models.PatchEntry`
+- **Schema**: `contracts/schemas/results.schema.json`
+- **Field**: `self_test: Optional[bool] = None`
+- **Purpose**: Records whether a candidate patch passed or failed the deterministic secret-format self-test before benign evaluation.

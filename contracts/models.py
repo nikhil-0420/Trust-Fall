@@ -165,6 +165,7 @@ class PatchEntry(BaseModel):
     summary: str
     reason: Optional[str] = None
     patch: Optional[Patch] = None
+    self_test: Optional[bool] = None
 
 
 class ContagionSummary(BaseModel):

@@ -17,3 +17,8 @@ Requests from Nikhil for changes to Nehaa-owned files or components.
 - **Files Modified**: `arena/transport_band.py`, `agents/dispatcher_band.py`, `agents/worker_band.py`
 - **Owner**: Nikhil
 - **Summary**: Updated `_fetch_room_messages()` and `_fetch_messages()` to support cursor-based pagination with `max_pages` parameter. Prevents messages beyond the initial 100 limit from being dropped during high-volume test runs in long-lived rooms.
+
+### Request 2026-11-24: Deterministic Patch Self-Test in Rollback Flow
+- **Files Modified**: `arena/rollback.py`
+- **Owner**: Nehaa (WS-C C4, C5) - additive edit by Nikhil
+- **Summary**: Added `run_patch_self_test(patch_dict)` before benign regression testing. Tests whether candidate patch's `tool_policy.send_report.redact_patterns` successfully redacts 5 random canaries in the format `CANARY-<6 hex>-DEMO-ONLY`. If not, rejects the patch with reason "redaction does not cover the secret format" and requests an adjusted proposal from Blue.
