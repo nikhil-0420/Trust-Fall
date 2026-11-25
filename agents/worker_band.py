@@ -45,9 +45,9 @@ class BandWorkerAgent:
 
         self.worker_core = worker_core or WorkerCore(
             llm=get_llm(),
-            state_dir=Path(os.getenv("STATE_DIR", ".")),
+            state_dir=Path(os.getenv("STATE_DIR", "data/worker_state")),
         )
-        self.room_id = os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")
+        self.room_id = os.getenv("BAND_ROOM_ID", "0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e")
         self.processed_msg_ids: set[str] = set()
         self.is_running = False
         self.rest_client = None
@@ -116,10 +116,12 @@ class BandWorkerAgent:
             content = getattr(msg, "content", "")
             is_for_worker = "agent-b" in content or (self.agent_id and self.agent_id in content)
             if "[TICKET:" in content and is_for_worker and "[Worker Report]" not in content:
+                logger.info(f"[TIMELINE] Worker message received: msg_id={msg_id} at {time.time():.4f}")
                 self.processed_msg_ids.add(msg_id)
                 handled.append(msg_id)
                 res = await self.handle_band_message(content)
                 self._post_to_room(res["content"])
+                logger.info(f"[TIMELINE] Worker report posted: msg_id={msg_id} at {time.time():.4f}")
             else:
                 self.processed_msg_ids.add(msg_id)
         return handled

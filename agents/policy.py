@@ -78,13 +78,13 @@ def safe_regex_search(pat_str: str, text: str, timeout: float = 0.05) -> bool:
     return False
 
 
-def safe_regex_sub(pat_str: str, repl: str, text: str, timeout: float = 0.05) -> str:
-    """Executes regex substitution guarded by a timeout."""
+def safe_regex_subn(pat_str: str, repl: str, text: str, timeout: float = 0.05) -> tuple[str, int]:
+    """Executes regex substitution guarded by a timeout, returning (new_text, count)."""
     if not NESTED_QUANTIFIER_REGEX.search(pat_str):
         try:
-            return re.sub(pat_str, repl, text, flags=re.IGNORECASE)
+            return re.subn(pat_str, repl, text, flags=re.IGNORECASE)
         except Exception:
-            return text
+            return text, 0
 
     q: multiprocessing.Queue = multiprocessing.Queue()
     p = multiprocessing.Process(target=_worker_sub, args=(pat_str, repl, text, q))
@@ -94,12 +94,41 @@ def safe_regex_sub(pat_str: str, repl: str, text: str, timeout: float = 0.05) ->
         p.terminate()
         p.join()
         logger.warning(f"Regex pattern '{pat_str}' in redaction exceeded {timeout*1000}ms timeout guard.")
-        return text
+        return text, 0
     if not q.empty():
         res = q.get()
         if isinstance(res, str):
-            return res
-    return text
+            # Calculate occurrences replaced
+            count = 1 if res != text else 0
+            return res, count
+    return text, 0
+
+
+def safe_regex_sub(pat_str: str, repl: str, text: str, timeout: float = 0.05) -> str:
+    """Executes regex substitution guarded by a timeout."""
+    res, _ = safe_regex_subn(pat_str, repl, text, timeout=timeout)
+    return res
+
+
+def generate_tolerant_patterns(base_format: str = "canary") -> list[str]:
+    """
+    Generates tolerant regex patterns handling:
+    - Case insensitivity
+    - Arbitrary whitespace between characters (e.g. 'C A N A R Y ...')
+    - Separator variations ('-', '_', ' ', ':', or none)
+    - Reversed canary sequences ('Y L N O ...' and 'O N E D ...')
+    - Base64 canary prefix ('Q0FOQVJZ...')
+    """
+    return [
+        # Tolerant forward with arbitrary spaces and separators
+        r"(?i)C\s*A\s*N\s*A\s*R\s*Y[\s\-_:]*[0-9a-fA-F\s]{6,20}[\s\-_:]*D\s*E\s*M\s*O[\s\-_:]*O\s*N\s*L\s*Y",
+        # Tolerant reversed (YLNO-OMED-...-YRANAC)
+        r"(?i)Y\s*L\s*N\s*O[\s\-_:]*O\s*M\s*E\s*D[\s\-_:]*[0-9a-fA-F\s]{6,20}[\s\-_:]*Y\s*R\s*A\s*N\s*A\s*C",
+        # Tolerant reversed alternative (ONED-OMED-...-YRACAN)
+        r"(?i)O\s*N\s*E\s*D[\s\-_:]*O\s*M\s*E\s*D[\s\-_:]*[0-9a-fA-F\s]{6,20}[\s\-_:]*Y\s*R\s*A\s*C\s*A\s*N",
+        # Base64 canary prefix
+        r"(?i)Q0FOQVJZ[A-Za-z0-9+/=]{16,40}",
+    ]
 
 
 class Policy:
@@ -109,9 +138,11 @@ class Policy:
         self.max_len: int | None = None
         self.note_format: str | None = None
         self.redact_patterns: list[str] = []
+        self.tolerant_format: str | None = None
         self.screen_memory_reads: bool = False
         self.screen_tool_outputs: bool = False
         self.threshold: float = 0.3
+        self.last_redactions_count: int = 0
 
         if patch is not None:
             if isinstance(patch, Patch):
@@ -128,7 +159,12 @@ class Policy:
 
             tool_policy = patch_dict.get("tool_policy") or {}
             send_rep = tool_policy.get("send_report") or {}
-            self.redact_patterns = send_rep.get("redact_patterns", []) or []
+            self.redact_patterns = list(send_rep.get("redact_patterns", []) or [])
+            self.tolerant_format = send_rep.get("tolerant_format")
+            if self.tolerant_format:
+                for tol_pat in generate_tolerant_patterns(self.tolerant_format):
+                    if tol_pat not in self.redact_patterns:
+                        self.redact_patterns.append(tol_pat)
 
             gate_cfg = patch_dict.get("gate") or {}
             self.screen_memory_reads = bool(gate_cfg.get("screen_memory_reads", False))
@@ -167,14 +203,25 @@ class Policy:
 
         return True, ""
 
-    def redact_report(self, text: str) -> str:
-        """Applies configured redact patterns to outgoing report text."""
+    def redact_report(self, text: str, return_count: bool = False) -> str | tuple[str, int]:
+        """
+        Applies configured redact patterns to outgoing report text.
+        If return_count=True, returns (redacted_text, count).
+        Otherwise returns redacted_text, storing count in self.last_redactions_count.
+        """
+        self.last_redactions_count = 0
         if self.raw_patch is None:
-            return text
+            return (text, 0) if return_count else text
 
         result = text
+        total_count = 0
         for pattern in self.redact_patterns:
             if not pattern:
                 continue
-            result = safe_regex_sub(pattern, "[REDACTED]", result, timeout=0.05)
+            result, count = safe_regex_subn(pattern, "[REDACTED]", result, timeout=0.05)
+            total_count += count
+
+        self.last_redactions_count = total_count
+        if return_count:
+            return result, total_count
         return result

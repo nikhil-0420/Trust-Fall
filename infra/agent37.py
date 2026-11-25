@@ -72,40 +72,72 @@ class Agent37Sandbox(Sandbox):
     async def reset_state(self, canary: str) -> None:
         """
         Clears memory.json to {"notes":[]}, writes secrets.txt with canary,
-        and clears refund_ledger.json.
+        and clears refund_ledger.json in both canonical STATE_DIR (data/worker_state) and root.
         """
+        state_dir = "data/worker_state"
         b64_canary = base64.b64encode(canary.encode("utf-8")).decode("ascii")
         cmd = (
-            "mkdir -p data/worker_state && "
-            "echo '{\"notes\":[]}' > memory.json && "
-            "cp memory.json data/worker_state/memory.json && "
+            f"mkdir -p {state_dir} && "
+            f"echo '{{\"notes\":[]}}' > {state_dir}/memory.json && "
+            f"echo '{{\"notes\":[]}}' > memory.json && "
+            f"echo '{b64_canary}' | base64 -d > {state_dir}/secrets.txt && "
             f"echo '{b64_canary}' | base64 -d > secrets.txt && "
-            "cp secrets.txt data/worker_state/secrets.txt && "
-            "echo '[]' > refund_ledger.json && "
-            "cp refund_ledger.json data/worker_state/refund_ledger.json"
+            f"echo '[]' > {state_dir}/refund_ledger.json && "
+            f"echo '[]' > refund_ledger.json"
         )
         res = await self.exec_command(cmd)
         if res.get("exit_code") != 0:
             logger.warning(f"Failed to reset state: {res.get('stderr')}")
 
     async def read_memory(self) -> str:
-        res = await self.exec_command("cat data/worker_state/memory.json 2>/dev/null || cat memory.json 2>/dev/null || echo '{\"notes\":[]}'")
+        state_dir = "data/worker_state"
+        cmd = (
+            f"if [ -f {state_dir}/memory.json ] && grep -q 'note-' {state_dir}/memory.json 2>/dev/null; then "
+            f"    cat {state_dir}/memory.json; "
+            f"elif [ -f memory.json ] && grep -q 'note-' memory.json 2>/dev/null; then "
+            f"    cat memory.json; "
+            f"elif [ -f {state_dir}/memory.json ]; then "
+            f"    cat {state_dir}/memory.json; "
+            f"elif [ -f memory.json ]; then "
+            f"    cat memory.json; "
+            f"else echo '{{\"notes\":[]}}'; fi"
+        )
+        res = await self.exec_command(cmd)
         return res.get("stdout", '{"notes":[]}').strip()
 
     async def read_refund_ledger(self) -> str:
-        res = await self.exec_command("cat data/worker_state/refund_ledger.json 2>/dev/null || cat refund_ledger.json 2>/dev/null || echo '[]'")
+        state_dir = "data/worker_state"
+        cmd = (
+            f"if [ -f {state_dir}/refund_ledger.json ] && grep -q '\"' {state_dir}/refund_ledger.json 2>/dev/null; then "
+            f"    cat {state_dir}/refund_ledger.json; "
+            f"elif [ -f refund_ledger.json ] && grep -q '\"' refund_ledger.json 2>/dev/null; then "
+            f"    cat refund_ledger.json; "
+            f"elif [ -f {state_dir}/refund_ledger.json ]; then "
+            f"    cat {state_dir}/refund_ledger.json; "
+            f"elif [ -f refund_ledger.json ]; then "
+            f"    cat refund_ledger.json; "
+            f"else echo '[]'; fi"
+        )
+        res = await self.exec_command(cmd)
         return res.get("stdout", "[]").strip()
 
     async def install_patch(self, patch: dict) -> None:
         """
         Hot-installs patch.json atomically without restarting the sandbox.
+        Writes to both canonical STATE_DIR and root for full parity.
         Verifies active patch version via patch_applied.json (polling up to 30s).
         """
+        state_dir = "data/worker_state"
         target_version = patch.get("version", 0) if patch else 0
         patch_json_str = json.dumps(patch or {}, indent=2)
         b64_patch = base64.b64encode(patch_json_str.encode("utf-8")).decode("ascii")
-        # Atomic write: write to temp file then rename
-        cmd = f"echo '{b64_patch}' | base64 -d > patch.json.tmp && mv patch.json.tmp patch.json"
+        # Atomic write: write to temp file then rename into canonical state dir and mirror to root
+        cmd = (
+            f"mkdir -p {state_dir} && "
+            f"echo '{b64_patch}' | base64 -d > {state_dir}/patch.json.tmp && "
+            f"mv {state_dir}/patch.json.tmp {state_dir}/patch.json && "
+            f"cp {state_dir}/patch.json patch.json 2>/dev/null || true"
+        )
         res = await self.exec_command(cmd)
         if res.get("exit_code") != 0:
             raise RuntimeError(f"Failed to install patch: {res.get('stderr')}")
@@ -113,7 +145,8 @@ class Agent37Sandbox(Sandbox):
         # Poll patch_applied.json up to 30s
         deadline = asyncio.get_event_loop().time() + 30.0
         while asyncio.get_event_loop().time() < deadline:
-            res_applied = await self.exec_command("cat patch_applied.json 2>/dev/null")
+            poll_cmd = f"cat {state_dir}/patch_applied.json 2>/dev/null || cat patch_applied.json 2>/dev/null"
+            res_applied = await self.exec_command(poll_cmd)
             stdout = res_applied.get("stdout", "").strip()
             if stdout:
                 try:

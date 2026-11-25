@@ -15,7 +15,7 @@ if [ -f "/home/node/.trustfall/worker.env" ]; then
 fi
 
 # Ensure STATE_DIR is set
-export STATE_DIR="${STATE_DIR:-.}"
+export STATE_DIR="${STATE_DIR:-data/worker_state}"
 export WORKER_PROMPT="${WORKER_PROMPT:-victim}"
 export MODEL_NAME="${MODEL_NAME:-gemini-3.5-flash-lite}"
 

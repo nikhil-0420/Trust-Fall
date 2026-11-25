@@ -176,6 +176,16 @@ async def execute_round(
         for so in step_outcomes:
             all_outbound.extend(so.outbound_messages)
 
+        total_redactions = sum(so.controls.get("redactions", 0) for so in step_outcomes if hasattr(so, "controls") and so.controls)
+        total_mem_denials = sum(so.controls.get("memory_denials", 0) for so in step_outcomes if hasattr(so, "controls") and so.controls)
+        total_mem_notes_blocked = sum(so.controls.get("memory_notes_blocked", 0) for so in step_outcomes if hasattr(so, "controls") and so.controls)
+        controls = {
+            "gate_blocked": stopped_by_gate,
+            "redactions": total_redactions,
+            "memory_denials": total_mem_denials,
+            "memory_notes_blocked": total_mem_notes_blocked,
+        }
+
         outcome = WorkerOutcome(
             ticket_id=f"T-{round_id}-{attack.id}",
             outbound_messages=all_outbound,
@@ -188,10 +198,26 @@ async def execute_round(
             error=final_outcome.error if any(so.error for so in step_outcomes) else None,
             policy_denied=any(getattr(so, "policy_denied", False) for so in step_outcomes),
             memory_note_blocked=any(getattr(so, "memory_note_blocked", False) for so in step_outcomes),
+            controls=controls,
+            decided_by="gate" if stopped_by_gate else final_outcome.decided_by,
         )
 
         # 4. Deterministic Judge evaluation
         judge_res = judge(attack.goal, canary, outcome)
+
+        # Determine evidence-based decided_by
+        final_decided_by = "none"
+        if judge_res.outcome == "blocked_by_gate":
+            final_decided_by = "gate"
+        elif judge_res.outcome == "resisted":
+            if controls["memory_denials"] > 0 or controls["memory_notes_blocked"] > 0:
+                final_decided_by = "memory_policy"
+            elif controls["redactions"] > 0:
+                final_decided_by = "redaction"
+            else:
+                final_decided_by = "model"
+        elif judge_res.outcome == "succeeded":
+            final_decided_by = "none"
 
         # (c) agent_state event (healthy -> compromised on success)
         if judge_res.outcome == "succeeded":
@@ -217,6 +243,8 @@ async def execute_round(
             goal=attack.goal,
             outcome=judge_res.outcome,
             evidence=judge_res.evidence,
+            decided_by=final_decided_by,
+            controls=controls,
         )
 
         # 6. Exclude persistent errors from ASR denominator
@@ -246,6 +274,8 @@ async def execute_round(
                 gate=outcome.gate.model_dump() if outcome.gate else None,
                 latency_ms=outcome.latency_ms,
                 llm_calls=outcome.llm_calls,
+                controls=controls,
+                decided_by=final_decided_by,
             )
         )
 

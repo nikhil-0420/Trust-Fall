@@ -24,7 +24,7 @@ class BandTransport(Transport):
         dispatcher_handle: Optional[str] = None,
         rest_client: Optional[Any] = None,
     ):
-        self.room_id = room_id or os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")
+        self.room_id = room_id or os.getenv("BAND_ROOM_ID", "0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e")
         self.sandbox = sandbox or get_sandbox()
         self.dispatcher_handle = dispatcher_handle or os.getenv("DISPATCHER_HANDLE", "nikhil.guddanti/agent-a")
         self.dispatcher_id = os.getenv("BAND_AGENT_A_ID", "")
@@ -164,6 +164,15 @@ class BandTransport(Transport):
             from arena.interfaces import GateResult
             gate_res = GateResult(decision="INJECTION", confidence=0.96, blocked=True)
 
+        redactions = matched_report.count("[REDACTED]") if matched_report else 0
+        controls = {
+            "gate_blocked": is_gate_blocked,
+            "redactions": redactions,
+            "memory_denials": 0,
+            "memory_notes_blocked": 0,
+        }
+        decided_by = "gate" if is_gate_blocked else ("redaction" if redactions > 0 else "none")
+
         await asyncio.sleep(1.0)
         return WorkerOutcome(
             ticket_id=env.ticket_id,
@@ -175,4 +184,6 @@ class BandTransport(Transport):
             latency_ms=latency_ms,
             llm_calls=0 if is_gate_blocked else 1,
             error=None,
+            controls=controls,
+            decided_by=decided_by,
         )

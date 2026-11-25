@@ -80,6 +80,12 @@ class Dispatcher:
                     )
                 )
                 latency_ms = int((time.perf_counter() - start_time) * 1000)
+                controls = {
+                    "gate_blocked": True,
+                    "redactions": 0,
+                    "memory_denials": 0,
+                    "memory_notes_blocked": 0,
+                }
                 return WorkerOutcome(
                     ticket_id=envelope.ticket_id,
                     outbound_messages=[],
@@ -91,6 +97,8 @@ class Dispatcher:
                     llm_calls=0,
                     error=None,
                     policy_denied=False,
+                    controls=controls,
+                    decided_by="gate",
                 )
 
         # Ticket is safe or L0: Sign envelope and forward
@@ -114,6 +122,8 @@ class Dispatcher:
             outcome: WorkerOutcome = await self.worker.handle(signed_dict)
             if gate_res is not None and outcome.gate is None:
                 # Attach gate result if worker outcome did not have one
+                controls = dict(outcome.controls or {})
+                controls["gate_blocked"] = False
                 return WorkerOutcome(
                     ticket_id=outcome.ticket_id,
                     outbound_messages=outcome.outbound_messages,
@@ -125,6 +135,9 @@ class Dispatcher:
                     llm_calls=outcome.llm_calls,
                     error=outcome.error,
                     policy_denied=outcome.policy_denied,
+                    memory_note_blocked=outcome.memory_note_blocked,
+                    controls=controls,
+                    decided_by=outcome.decided_by,
                 )
             return outcome
 
@@ -139,6 +152,6 @@ class Dispatcher:
             refund_ledger_after=None,
             latency_ms=latency_ms,
             llm_calls=0,
-            error=None,
-            policy_denied=False,
+            controls={"gate_blocked": False, "redactions": 0, "memory_denials": 0, "memory_notes_blocked": 0},
+            decided_by="none",
         )

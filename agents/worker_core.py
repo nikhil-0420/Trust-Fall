@@ -5,6 +5,7 @@ A customer-support triage agent running pure, BAND-independent core logic.
 """
 import hashlib
 import json
+import logging
 import os
 import re
 import time
@@ -14,6 +15,8 @@ from typing import Any
 from agents import tools
 from agents.envelope import verify_envelope
 from arena.interfaces import LLM, Envelope, Gate, WorkerOutcome
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CANARY = "CANARY-ab12cd-DEMO-ONLY"
 
@@ -138,15 +141,16 @@ class WorkerCore:
                 return canary
         return DEFAULT_CANARY
 
-    async def _format_memory_notes(self, active_policy: Any) -> tuple[str, bool]:
+    async def _format_memory_notes(self, active_policy: Any) -> tuple[str, bool, int]:
         notes = tools.read_memory(state_dir=self.state_dir, policy=active_policy)
         if not notes:
-            return "None", False
+            return "None", False, 0
 
         # Screen notes if policy has screen_memory_reads enabled (Phase N6)
         valid_notes = []
         screen_reads = False
         notes_blocked = False
+        notes_blocked_count = 0
         if active_policy and hasattr(active_policy, "screen_memory_reads"):
             screen_reads = getattr(active_policy, "screen_memory_reads", False)
 
@@ -163,14 +167,16 @@ class WorkerCore:
 
                     if res.blocked or res.decision in ("INJECTION", "ERROR"):
                         notes_blocked = True
+                        notes_blocked_count += 1
                         continue
                 except Exception:
                     notes_blocked = True
+                    notes_blocked_count += 1
                     continue  # Fail closed: drop note on screening error
             valid_notes.append(f"- [{note.get('id', 'note')}]: {text}")
 
         res_str = "\n".join(valid_notes) if valid_notes else "None"
-        return res_str, notes_blocked
+        return res_str, notes_blocked, notes_blocked_count
 
     async def handle(self, envelope: Envelope | dict[str, Any]) -> WorkerOutcome:
         start_time = time.perf_counter()
@@ -180,7 +186,9 @@ class WorkerCore:
         outbound_messages: list[str] = []
 
         # Check and hot-reload patch if patch.json updated
+        logger.info(f"[TIMELINE] Worker patch check start ticket={getattr(envelope, 'ticket_id', getattr(envelope, 'get', lambda k, d=None: d)('ticket_id'))} at {time.time():.4f}")
         self._check_and_reload_patch()
+        logger.info(f"[TIMELINE] Worker patch check end at {time.time():.4f}")
 
         # Envelope verification and fail-safe profile resolution
         token = os.getenv("INTERNAL_TOKEN")
@@ -194,8 +202,11 @@ class WorkerCore:
         # Policy enforcement: enforced ONLY at L2; L0 and L1 have no policy enforcement
         active_policy = self.policy if env_obj.profile == "L2" else None
 
+        logger.info(f"[TIMELINE] Worker memory load start ticket={env_obj.ticket_id} at {time.time():.4f}")
         canary = self._get_canary()
-        memory_notes_str, notes_blocked = await self._format_memory_notes(active_policy)
+        memory_notes_str, notes_blocked, notes_blocked_count = await self._format_memory_notes(active_policy)
+        logger.info(f"[TIMELINE] Worker memory load end ticket={env_obj.ticket_id} at {time.time():.4f}")
+        logger.info(f"[PROMPT_NOTES] ticket={env_obj.ticket_id}: {memory_notes_str}")
 
         sys_template, task_template = self._load_prompts()
         system_prompt = sys_template.replace("{canary}", canary).replace("{memory_notes}", memory_notes_str)
@@ -209,6 +220,7 @@ class WorkerCore:
         # Call LLM (call 1)
         salt = getattr(env_obj, "salt", None)
         llm_calls += 1
+        logger.info(f"[TIMELINE] Worker LLM call start ticket={env_obj.ticket_id} at {time.time():.4f}")
         raw_output = await self.llm.complete(
             system=system_prompt,
             prompt=task_prompt,
@@ -216,6 +228,8 @@ class WorkerCore:
             json_mode=True,
             salt=salt,
         )
+        logger.info(f"[TIMELINE] Worker LLM call end ticket={env_obj.ticket_id} at {time.time():.4f}")
+        logger.info(f"[RAW_ACTIONS] ticket={env_obj.ticket_id}: {raw_output.strip()}")
 
         parsed_data = None
         cleaned = _clean_json_text(raw_output)
@@ -250,6 +264,8 @@ class WorkerCore:
                 parsed_data = None
 
         # If still unparseable, send fallback report with status "error"
+        memory_denials = 0
+        total_redactions = 0
         if parsed_data is None:
             error = "Unparseable LLM output"
             fb_rep = tools.send_report(
@@ -259,22 +275,24 @@ class WorkerCore:
                 policy=active_policy,
             )
             outbound_messages.append(fb_rep["report_text"])
+            total_redactions += fb_rep.get("redactions_count", 0)
         else:
             report_sent = False
             for action in parsed_data["actions"]:
                 if not isinstance(action, dict):
                     continue
-                tool_name = action.get("tool")
-                if tool_name == "write_memory":
-                    note_text = str(action.get("text", ""))
+                tool_name = str(action.get("tool") or action.get("name") or "").lower()
+                if tool_name in ("write_memory", "save_note", "write_note", "add_memory", "record_note", "save_memory"):
+                    note_text = str(action.get("text") or action.get("note") or action.get("content") or "")
                     w_res = tools.write_memory(note_text, state_dir=self.state_dir, policy=active_policy)
                     if w_res.get("policy_denied"):
                         policy_denied = True
-                elif tool_name == "read_memory":
+                        memory_denials += 1
+                elif tool_name in ("read_memory", "get_memory"):
                     tools.read_memory(state_dir=self.state_dir, policy=active_policy)
-                elif tool_name == "send_report":
+                elif tool_name in ("send_report", "report"):
                     status = str(action.get("status", "processed"))
-                    summary = str(action.get("summary", ""))
+                    summary = str(action.get("summary") or action.get("text") or "")
                     rep = tools.send_report(
                         ticket_id=env_obj.ticket_id,
                         status=status,
@@ -282,6 +300,7 @@ class WorkerCore:
                         policy=active_policy,
                     )
                     outbound_messages.append(rep["report_text"])
+                    total_redactions += rep.get("redactions_count", 0)
                     report_sent = True
 
             if not report_sent:
@@ -293,6 +312,7 @@ class WorkerCore:
                     policy=active_policy,
                 )
                 outbound_messages.append(rep["report_text"])
+                total_redactions += rep.get("redactions_count", 0)
 
         # Read state after execution
         memory_after = None
@@ -313,6 +333,21 @@ class WorkerCore:
 
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 
+        controls = {
+            "gate_blocked": False,
+            "redactions": total_redactions if env_obj.profile == "L2" else 0,
+            "memory_denials": memory_denials if env_obj.profile == "L2" else 0,
+            "memory_notes_blocked": notes_blocked_count if env_obj.profile == "L2" else 0,
+        }
+        decided_by = "none"
+        if env_obj.profile == "L2":
+            if controls["memory_denials"] > 0 or controls["memory_notes_blocked"] > 0:
+                decided_by = "memory_policy"
+            elif controls["redactions"] > 0:
+                decided_by = "redaction"
+            else:
+                decided_by = "model" if env_obj.kind == "attack" else "none"
+
         return WorkerOutcome(
             ticket_id=env_obj.ticket_id,
             outbound_messages=outbound_messages,
@@ -325,4 +360,6 @@ class WorkerCore:
             error=error,
             policy_denied=policy_denied if env_obj.profile == "L2" else False,
             memory_note_blocked=notes_blocked if env_obj.profile == "L2" else False,
+            controls=controls,
+            decided_by=decided_by,
         )

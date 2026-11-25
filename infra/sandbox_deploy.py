@@ -154,15 +154,16 @@ def deploy_worker() -> str:
             ("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "")),
             ("BAND_AGENT_B_ID", os.getenv("BAND_AGENT_B_ID", "")),
             ("BAND_AGENT_B_KEY", os.getenv("BAND_AGENT_B_KEY", "")),
-            ("BAND_ROOM_ID", os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")),
+            ("BAND_ROOM_ID", os.getenv("BAND_ROOM_ID", "0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e")),
             ("INTERNAL_TOKEN", os.getenv("INTERNAL_TOKEN", "")),
             ("MODEL_NAME", os.getenv("MODEL_NAME", "gemini-3.5-flash-lite")),
             ("WORKER_PROMPT", os.getenv("WORKER_PROMPT", "victim")),
-            ("STATE_DIR", "."),
+            ("STATE_DIR", "data/worker_state"),
             ("GATE_URL", os.getenv("GATE_URL", "")),
             ("USE_MOCKS", "0"),
             ("LIVE_APPROVED", "1"),
             ("LLM_IMPL", "gemini"),
+            ("GEMINI_MIN_INTERVAL_S", os.getenv("GEMINI_MIN_INTERVAL_S", "0")),
         ]
         env_content = "\n".join(f"export {k}='{v}'" for k, v in env_vars if v) + "\n"
         b64_env = base64.b64encode(env_content.encode("utf-8")).decode("ascii")

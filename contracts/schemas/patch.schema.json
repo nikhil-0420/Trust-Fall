@@ -110,6 +110,18 @@
           ],
           "default": null,
           "title": "Redact Patterns"
+        },
+        "tolerant_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tolerant Format"
         }
       },
       "title": "ToolPolicyRule",

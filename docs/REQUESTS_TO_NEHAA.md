@@ -22,3 +22,8 @@ Requests from Nikhil for changes to Nehaa-owned files or components.
 - **Files Modified**: `arena/rollback.py`
 - **Owner**: Nehaa (WS-C C4, C5) - additive edit by Nikhil
 - **Summary**: Added `run_patch_self_test(patch_dict)` before benign regression testing. Tests whether candidate patch's `tool_policy.send_report.redact_patterns` successfully redacts 5 random canaries in the format `CANARY-<6 hex>-DEMO-ONLY`. If not, rejects the patch with reason "redaction does not cover the secret format" and requests an adjusted proposal from Blue.
+
+### Request 2026-11-25: Evidence-Based Attribution in Referee and Schemas
+- **Files Modified**: `contracts/models.py`, `contracts/schemas/event.schema.json`, `contracts/schemas/results.schema.json`, `arena/rounds.py`, `arena/interfaces.py`, `agents/policy.py`, `agents/tools.py`
+- **Owner**: Nikhil & Nehaa
+- **Summary**: Implemented telemetry tracking across Policy redactions, tool memory-write denials, memory-note screenings, and dispatcher gate decisions. Added `controls` dictionary and `decided_by` enum (`gate`, `memory_policy`, `redaction`, `model`, `none`) to `WorkerOutcome`, `Event`, and `RoundAttackResult`. Ensures all round reports and judge events explicitly record empirical evidence for which defensive layer stopped each attack.

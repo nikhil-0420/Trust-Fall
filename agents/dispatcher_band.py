@@ -44,7 +44,7 @@ class BandDispatcherAgent:
         self.agent_id = a_cfg.get("agent_id") or os.getenv("BAND_AGENT_A_ID", "")
         self.api_key = a_cfg.get("api_key") or os.getenv("BAND_AGENT_A_KEY", "")
 
-        self.room_id = room_id or os.getenv("BAND_ROOM_ID", "2259e40a-1833-49f4-b647-596ac09f99ea")
+        self.room_id = room_id or os.getenv("BAND_ROOM_ID", "0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e")
         self.worker_handle = worker_handle or os.getenv("WORKER_HANDLE", "nikhil.guddanti/agent-b")
         b_cfg = cfg.get("agent_b", {})
         self.worker_id = worker_id or b_cfg.get("agent_id") or os.getenv("BAND_AGENT_B_ID", "")
@@ -117,6 +117,7 @@ class BandDispatcherAgent:
             # Only process messages intended for Dispatcher containing [TICKET:
             is_for_dispatcher = "agent-a" in content or (self.agent_id and self.agent_id in content)
             if "[TICKET:" in content and is_for_dispatcher and "[Worker Report]" not in content:
+                logger.info(f"[TIMELINE] Dispatcher message received: msg_id={msg_id} at {time.time():.4f}")
                 self.processed_msg_ids.add(msg_id)
                 handled.append(msg_id)
                 await self._process_ticket_message(content)
@@ -140,7 +141,9 @@ class BandDispatcherAgent:
 
         # Check gate at L1/L2
         if env.profile in ("L1", "L2") and self.dispatcher.gate is not None:
+            logger.info(f"[TIMELINE] Dispatcher gate start ticket={env.ticket_id} at {time.time():.4f}")
             gate_res = await self.dispatcher.gate.screen(env.text, stage="pre_dispatch")
+            logger.info(f"[TIMELINE] Dispatcher gate end ticket={env.ticket_id} at {time.time():.4f}")
             if gate_res.blocked or gate_res.decision in ("INJECTION", "ERROR"):
                 reply = f"[Worker Report] [TICKET:{env.ticket_id}]: BLOCKED BY GATE - {gate_res.decision}"
                 red_id = os.getenv("BAND_AGENT_RED_ID", "")
@@ -159,6 +162,7 @@ class BandDispatcherAgent:
             {"handle": self.worker_handle, "id": self.worker_id, "name": "Worker"}
         ]
         self._post_to_room(forward_msg, mentions=mentions)
+        logger.info(f"[TIMELINE] Dispatcher forward posted ticket={env.ticket_id} at {time.time():.4f}")
 
     async def run(self, interval_s: float = 1.0) -> None:
         self.is_running = True

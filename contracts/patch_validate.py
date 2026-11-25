@@ -107,6 +107,12 @@ def validate_patch(patch: Any) -> tuple[bool, list[str], Patch | None]:
         else:
             send_rep = tool_policy.get("send_report")
             if send_rep is not None and isinstance(send_rep, dict):
+                tolerant_format = send_rep.get("tolerant_format")
+                if tolerant_format is not None:
+                    if not isinstance(tolerant_format, str):
+                        errors.append("tool_policy.send_report.tolerant_format must be a string")
+                    elif len(tolerant_format) > 200:
+                        errors.append(f"tolerant_format length {len(tolerant_format)} exceeds limit 200")
                 redact_patterns = send_rep.get("redact_patterns", [])
                 if not isinstance(redact_patterns, list):
                     errors.append("tool_policy.send_report.redact_patterns must be a list of strings")

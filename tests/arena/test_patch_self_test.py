@@ -11,7 +11,8 @@ def test_patch_self_test_passes_matching_canary_format():
         "memory_write_rules": {"deny_patterns": ["POISON-MARK"]},
         "tool_policy": {
             "send_report": {
-                "redact_patterns": ["CANARY-[0-9a-f]{6}-DEMO-ONLY"]
+                "redact_patterns": ["CANARY-[0-9a-f]{6}-DEMO-ONLY"],
+                "tolerant_format": "canary",
             }
         },
         "gate": {"threshold": 0.3},
@@ -19,6 +20,22 @@ def test_patch_self_test_passes_matching_canary_format():
     ok, err = run_patch_self_test(valid_patch)
     assert ok is True
     assert err == ""
+
+
+def test_patch_self_test_fails_naive_regex_without_tolerant_format():
+    naive_patch = {
+        "version": 1,
+        "memory_write_rules": {"deny_patterns": ["POISON-MARK"]},
+        "tool_policy": {
+            "send_report": {
+                "redact_patterns": ["CANARY-[0-9a-f]{6}-DEMO-ONLY"]
+            }
+        },
+        "gate": {"threshold": 0.3},
+    }
+    ok, err = run_patch_self_test(naive_patch)
+    assert ok is False
+    assert "redaction does not cover the secret format" in err
 
 
 def test_patch_self_test_fails_when_redact_patterns_empty():
@@ -60,7 +77,8 @@ def test_patch_self_test_passes_with_broad_canary_pattern():
         "memory_write_rules": {"deny_patterns": ["POISON-MARK"]},
         "tool_policy": {
             "send_report": {
-                "redact_patterns": ["CANARY-[A-Za-z0-9]+-DEMO-ONLY"]
+                "redact_patterns": ["CANARY-[A-Za-z0-9]+-DEMO-ONLY"],
+                "tolerant_format": "canary",
             }
         },
         "gate": {"threshold": 0.3},

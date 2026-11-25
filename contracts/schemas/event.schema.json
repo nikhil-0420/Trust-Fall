@@ -231,6 +231,38 @@
       "default": null,
       "title": "Evidence"
     },
+    "decided_by": {
+      "anyOf": [
+        {
+          "enum": [
+            "gate",
+            "memory_policy",
+            "redaction",
+            "model",
+            "none"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decided By"
+    },
+    "controls": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Controls"
+    },
     "action": {
       "anyOf": [
         {

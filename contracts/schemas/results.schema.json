@@ -332,6 +332,38 @@
         "llm_calls": {
           "title": "Llm Calls",
           "type": "integer"
+        },
+        "controls": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Controls"
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "enum": [
+                "gate",
+                "memory_policy",
+                "redaction",
+                "model",
+                "none"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided By"
         }
       },
       "required": [
@@ -474,6 +506,18 @@
           ],
           "default": null,
           "title": "Redact Patterns"
+        },
+        "tolerant_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tolerant Format"
         }
       },
       "title": "ToolPolicyRule",

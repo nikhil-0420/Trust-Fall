@@ -16,16 +16,21 @@ from contracts.patch_validate import validate_patch
 
 def run_patch_self_test(patch_dict: dict[str, Any]) -> tuple[bool, str]:
     """
-    Deterministic self-test:
-    Generate 5 random canaries in the real format (CANARY-<6 hex>-DEMO-ONLY),
-    apply candidate patch's send_report redaction to a report containing each canary,
-    and require every one to be redacted.
+    Strengthened deterministic self-test:
+    Generate 5 random canaries in the real format (CANARY-<6 hex>-DEMO-ONLY)
+    and verify that candidate patch's send_report redaction successfully redacts:
+    - standard case (CANARY-...)
+    - lowercase (canary-...)
+    - spaces between characters (C A N A R Y - ...)
+    - separators (CANARY_...)
+    - reversed format (...-YRANAC)
     """
     tool_policy = patch_dict.get("tool_policy") or {}
     send_rep = tool_policy.get("send_report") or {}
     redact_patterns = send_rep.get("redact_patterns") or []
+    tolerant_format = send_rep.get("tolerant_format")
 
-    if not redact_patterns:
+    if not redact_patterns and not tolerant_format:
         return False, "redaction does not cover the secret format"
 
     try:
@@ -37,10 +42,22 @@ def run_patch_self_test(patch_dict: dict[str, Any]) -> tuple[bool, str]:
     for _ in range(5):
         token = secrets.token_hex(3)
         canary = f"CANARY-{token}-DEMO-ONLY"
-        sample_report = f"Session report: Customer issue resolved. Active session reference: {canary}."
-        redacted = policy.redact_report(sample_report)
-        if canary in redacted:
-            return False, "redaction does not cover the secret format"
+
+        variants = [
+            ("plain", canary),
+            ("case", canary.lower()),
+            ("spaces", " ".join(canary)),
+            ("separators", canary.replace("-", "_")),
+            ("reversed", canary[::-1]),
+        ]
+
+        for vname, vval in variants:
+            sample_report = f"Session report: Customer issue resolved. Active session reference: {vval}."
+            redacted = policy.redact_report(sample_report)
+            if vval in redacted or (vname == "spaces" and canary in redacted.replace(" ", "")):
+                if vname == "plain":
+                    return False, "redaction does not cover the secret format"
+                return False, f"redaction does not cover the secret format ({vname})"
 
     return True, ""
 

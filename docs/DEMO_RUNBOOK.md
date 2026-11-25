@@ -74,8 +74,10 @@ This runbook provides a concise, rehearsed script and command sequence for recor
 ---
 
 ### Target BAND Room Configuration
-- **Verified Demo Room ID:** `2259e40a-1833-49f4-b647-596ac09f99ea` (Qualified via Test A: 5/5 sequential benign replies received, 0 timeouts, average roundtrip latency ~9.7s).
-- **Sandbox Instance ID:** `<SANDBOX_ID>` (Agent37 sandbox with live worker listening on `2259e40a-1833-49f4-b647-596ac09f99ea`).
+- **Verified Fresh Demo Room ID:** `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e` (Qualified via 5/5 sequential benign replies received, 0 timeouts, median latency ~8.5s, sub-second worker compute).
+- **Fallback Demo Room ID:** `2259e40a-1833-49f4-b647-596ac09f99ea` (5/5 sequential benign replies received, median latency ~7.8s).
+- **Sandbox Instance ID:** `<SANDBOX_ID>` (Agent37 sandbox with live worker listening on `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`).
+- **Validated Latency Budget:** 7.5s – 8.5s round trip; recommended timeout setting `TICKET_TIMEOUT_S=35.0s`.
 - **Installed Patch:** Patch v1 from `data/results.json` installed in sandbox worker (`patch.json` and `patch_applied.json`).
 
 ---

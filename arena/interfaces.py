@@ -9,6 +9,7 @@ from contracts.models import Attack
 ProfileType = Literal["L0", "L1", "L2"]
 TicketKind = Literal["attack", "benign", "challenge"]
 GateDecision = Literal["SAFE", "INJECTION", "ERROR"]
+DecidedBy = Literal["gate", "memory_policy", "redaction", "model", "none"]
 
 
 class Envelope(BaseModel):
@@ -46,6 +47,8 @@ class WorkerOutcome(BaseModel):
     error: Optional[str] = None
     policy_denied: Optional[bool] = Field(default=None, description="True if memory write or tool was blocked by policy")
     memory_note_blocked: Optional[bool] = Field(default=None, description="True if one or more memory notes were dropped by gate screening")
+    controls: Dict[str, Any] = Field(default_factory=dict, description="Detailed evidence of controls triggered: gate_blocked, redactions, memory_denials, memory_notes_blocked")
+    decided_by: Optional[DecidedBy] = Field(default="none", description="Primary control that decided outcome: gate, memory_policy, redaction, model, none")
 
 
 @runtime_checkable

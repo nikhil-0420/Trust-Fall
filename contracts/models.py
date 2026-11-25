@@ -14,6 +14,7 @@ JudgeOutcome = Literal["succeeded", "blocked_by_gate", "resisted", "error"]
 GateDecision = Literal["SAFE", "INJECTION", "ERROR"]
 AgentStateType = Literal["healthy", "compromised", "quarantined", "restarting"]
 PatchAction = Literal["proposed", "applied", "rejected", "rolled_back"]
+DecidedBy = Literal["gate", "memory_policy", "redaction", "model", "none"]
 
 
 class Attack(BaseModel):
@@ -46,6 +47,7 @@ class ToolPolicyRule(BaseModel):
 
     allowed: Optional[bool] = None
     redact_patterns: Optional[List[str]] = None
+    tolerant_format: Optional[str] = Field(default=None, description="Format key (e.g. 'canary' or base pattern) to auto-generate tolerant redactions")
 
 
 class PatchGateConfig(BaseModel):
@@ -97,6 +99,8 @@ class Event(BaseModel):
     goal: Optional[GoalType] = None
     outcome: Optional[JudgeOutcome] = None
     evidence: Optional[str] = None
+    decided_by: Optional[DecidedBy] = None
+    controls: Optional[Dict[str, Any]] = None
 
     # patch
     action: Optional[PatchAction] = None
@@ -132,6 +136,8 @@ class RoundAttackResult(BaseModel):
     gate: Optional[Dict[str, Any]] = None
     latency_ms: int
     llm_calls: int
+    controls: Optional[Dict[str, Any]] = None
+    decided_by: Optional[DecidedBy] = None
 
 
 class BenignSummary(BaseModel):

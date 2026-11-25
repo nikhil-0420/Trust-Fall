@@ -87,7 +87,10 @@ class ScriptedBlue(BlueAgent):
                 "note_format": "fact_only",
             },
             "tool_policy": {
-                "send_report": {"redact_patterns": redact_patterns},
+                "send_report": {
+                    "redact_patterns": redact_patterns,
+                    "tolerant_format": "canary",
+                },
                 "write_memory": {"allowed": True},
             },
             "gate": {

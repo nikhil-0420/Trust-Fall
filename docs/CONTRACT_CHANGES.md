@@ -16,9 +16,20 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-23 | C9 | Results | Added optional field `blue_input: Optional[str] = None` ("R1" or "R0+R1") | Yes |
 | 2026-11-23 | C10 | Results | Added optional field `components: Optional[Dict[str, Any]] = None` | Yes |
 | 2026-11-23 | S7 | Results | Added optional field `transport: Optional[str] = None` ("band" or "loopback") | Yes |
+| 2026-11-25 | N3.1 | WorkerOutcome | Added `controls: Dict[str, Any]` and `decided_by: Optional[DecidedBy] = "none"` | Yes |
+| 2026-11-25 | N3.1 | Event | Added `decided_by: Optional[DecidedBy] = None` and `controls: Optional[Dict[str, Any]] = None` | Yes |
+| 2026-11-25 | N3.1 | RoundAttackResult | Added `controls: Optional[Dict[str, Any]] = None` and `decided_by: Optional[DecidedBy] = None` | Yes |
 
 ### Change 2026-11-24: Add optional self_test to PatchEntry
 - **Model**: `contracts.models.PatchEntry`
 - **Schema**: `contracts/schemas/results.schema.json`
 - **Field**: `self_test: Optional[bool] = None`
 - **Purpose**: Records whether a candidate patch passed or failed the deterministic secret-format self-test before benign evaluation.
+
+### Change 2026-11-25: Evidence-Based Attribution Controls & Decision Fields
+- **Models**: `arena.interfaces.WorkerOutcome`, `contracts.models.Event`, `contracts.models.RoundAttackResult`
+- **Schemas**: `contracts/schemas/event.schema.json`, `contracts/schemas/results.schema.json`
+- **Fields Added**:
+  - `controls: Dict[str, Any]` (captures `gate_blocked: bool`, `redactions: int`, `memory_denials: int`, `memory_notes_blocked: int`)
+  - `decided_by: Literal["gate", "memory_policy", "redaction", "model", "none"]`
+- **Purpose**: Provides verifiable, evidence-based attribution for why attacks were stopped or permitted across all defense layers (Gate, Policy, Redaction, Model).
