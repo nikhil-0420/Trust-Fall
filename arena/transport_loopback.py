@@ -58,4 +58,7 @@ class LoopbackTransport(Transport):
 
     async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
         """Sends an envelope through the Dispatcher and returns the WorkerOutcome."""
-        return await self.dispatcher.handle_ticket(env)
+        outcome = await self.dispatcher.handle_ticket(env)
+        if outcome.path is None:
+            outcome.path = "in-process"
+        return outcome

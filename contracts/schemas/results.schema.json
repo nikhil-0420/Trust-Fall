@@ -1,5 +1,23 @@
 {
   "$defs": {
+    "SubcategorySummary": {
+      "properties": {
+        "total": {
+          "title": "Total",
+          "type": "integer"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "total",
+        "passed"
+      ],
+      "title": "SubcategorySummary",
+      "type": "object"
+    },
     "BenignSummary": {
       "properties": {
         "total": {
@@ -9,6 +27,28 @@
         "passed": {
           "title": "Passed",
           "type": "integer"
+        },
+        "memory_utility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SubcategorySummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trigger_word": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SubcategorySummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -364,6 +404,18 @@
           ],
           "default": null,
           "title": "Decided By"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
         }
       },
       "required": [
@@ -518,6 +570,18 @@
           ],
           "default": null,
           "title": "Tolerant Format"
+        },
+        "redact_known_secrets": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redact Known Secrets"
         }
       },
       "title": "ToolPolicyRule",

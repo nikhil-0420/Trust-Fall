@@ -35,6 +35,7 @@ Configure these variables in your host's dashboard (never commit them to git):
 | `USE_MOCKS` | Mock mode toggle (`1` = mock, `0` = live) | `1` (default for safety) |
 | `LIVE_APPROVED` | Explicit approval flag for live API spending | `0` (default) |
 | `TRANSPORT` | Transport implementation (`mock` / `loopback` / `band`) | `mock` |
+| `CHALLENGE_TRANSPORT` | Challenge mode transport selection (`auto` / `band` / `loopback`) | `auto` |
 | `LLM_DAILY_CAP` | Daily budget limit for LLM calls | `200` |
 | `LYZR_DAILY_CAP` | Daily budget limit for Lyzr detector calls | `15` |
 

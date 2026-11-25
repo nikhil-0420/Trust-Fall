@@ -95,6 +95,11 @@ From `/home/node/worker.log` high-resolution telemetry:
 - Network payload differences between old room (580+ msgs) and fresh room (0 msgs) on single-page fetch (`limit=100`):
   - In fresh room: Polling overhead is minimal and room listing returns quickly.
 
+### 4.1 Step 5d Evaluation & Policy Recommendation
+- **Does the SDK load room history into prompt?** NO. Telemetry and prompt inspection prove conclusively that `WorkerCore` parses only the target ticket payload and does not load room history into the Gemini context.
+- **Latency source:** The small variation between old room (median 7.75s) and fresh room (median 8.55s) is purely network latency and polling loop phase jitter (0.5s–1.0s sleep intervals).
+- **Session Recommendation:** For live demo recordings and evaluator presentations, use a dedicated fresh room (`BAND_ROOM_ID=0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`) to keep message logs clean and avoid pagination overhead when listing recent messages.
+
 ---
 
 ## 5. Validated Latency Budget for Live Demo

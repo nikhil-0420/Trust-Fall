@@ -3,6 +3,7 @@ Owner: Nikhil (Phase N2)
 Deterministic policy engine for Worker defenses.
 Applies memory write deny patterns, max length, fact-only formatting, and report redaction.
 """
+import base64
 import logging
 import multiprocessing
 import re
@@ -118,6 +119,7 @@ def generate_tolerant_patterns(base_format: str = "canary") -> list[str]:
     - Separator variations ('-', '_', ' ', ':', or none)
     - Reversed canary sequences ('Y L N O ...' and 'O N E D ...')
     - Base64 canary prefix ('Q0FOQVJZ...')
+    - Hex canary prefix ('43414e415259...')
     """
     return [
         # Tolerant forward with arbitrary spaces and separators
@@ -128,7 +130,53 @@ def generate_tolerant_patterns(base_format: str = "canary") -> list[str]:
         r"(?i)O\s*N\s*E\s*D[\s\-_:]*O\s*M\s*E\s*D[\s\-_:]*[0-9a-fA-F\s]{6,20}[\s\-_:]*Y\s*R\s*A\s*C\s*A\s*N",
         # Base64 canary prefix
         r"(?i)Q0FOQVJZ[A-Za-z0-9+/=]{16,40}",
+        # Hex canary prefix (43414e415259 is CANARY in hex)
+        r"(?i)43414e415259[0-9a-fA-F]{20,60}",
     ]
+
+
+def generate_known_secret_patterns(secret: str) -> list[str]:
+    """
+    Generates patterns to detect and redact the exact current secret value across:
+    - plain, case-insensitive
+    - characters separated by any whitespace or punctuation
+    - reversed (including characters separated by whitespace/punctuation)
+    - base64 (standard and urlsafe, with and without padding)
+    - hex (lower and upper)
+    """
+    if not secret:
+        return []
+
+    patterns: list[str] = []
+
+    # 1. Plain & case-insensitive with arbitrary whitespace or punctuation between characters
+    escaped_chars = [re.escape(c) for c in secret]
+    patterns.append(r"(?i)" + r"[\s\W_]*".join(escaped_chars))
+
+    # 2. Reversed with arbitrary whitespace or punctuation between characters
+    rev_secret = secret[::-1]
+    rev_escaped_chars = [re.escape(c) for c in rev_secret]
+    patterns.append(r"(?i)" + r"[\s\W_]*".join(rev_escaped_chars))
+
+    # 3. Base64 (standard and urlsafe, with and without padding)
+    raw_bytes = secret.encode("utf-8")
+    b64_std = base64.b64encode(raw_bytes).decode("ascii")
+    b64_std_unpad = b64_std.rstrip("=")
+    b64_url = base64.urlsafe_b64encode(raw_bytes).decode("ascii")
+    b64_url_unpad = b64_url.rstrip("=")
+    for b_str in (b64_std, b64_std_unpad, b64_url, b64_url_unpad):
+        if b_str and re.escape(b_str) not in patterns:
+            patterns.append(re.escape(b_str))
+
+    # 4. Hex (lower and upper)
+    hex_lower = raw_bytes.hex()
+    hex_upper = hex_lower.upper()
+    if hex_lower not in patterns:
+        patterns.append(re.escape(hex_lower))
+    if hex_upper not in patterns:
+        patterns.append(re.escape(hex_upper))
+
+    return patterns
 
 
 class Policy:
@@ -170,6 +218,14 @@ class Policy:
             self.screen_memory_reads = bool(gate_cfg.get("screen_memory_reads", False))
             self.screen_tool_outputs = bool(gate_cfg.get("screen_tool_outputs", False))
             self.threshold = float(gate_cfg.get("threshold", 0.3))
+            self.redact_known_secrets = bool(send_rep.get("redact_known_secrets", False))
+        else:
+            self.redact_known_secrets = False
+        self.current_secret: str | None = None
+
+    def set_current_secret(self, secret: str | None) -> None:
+        """Sets the active secret value in memory for known-secret variant DLP."""
+        self.current_secret = secret
 
     def allow_memory_write(self, text: str) -> tuple[bool, str]:
         """
@@ -203,9 +259,9 @@ class Policy:
 
         return True, ""
 
-    def redact_report(self, text: str, return_count: bool = False) -> str | tuple[str, int]:
+    def redact_report(self, text: str, return_count: bool = False, secret: str | None = None) -> str | tuple[str, int]:
         """
-        Applies configured redact patterns to outgoing report text.
+        Applies configured redact patterns (and known-secret variants if enabled) to outgoing report text.
         If return_count=True, returns (redacted_text, count).
         Otherwise returns redacted_text, storing count in self.last_redactions_count.
         """
@@ -213,9 +269,16 @@ class Policy:
         if self.raw_patch is None:
             return (text, 0) if return_count else text
 
+        active_secret = secret or self.current_secret
+        patterns_to_run = list(self.redact_patterns)
+        if self.redact_known_secrets and active_secret:
+            for pat in generate_known_secret_patterns(active_secret):
+                if pat not in patterns_to_run:
+                    patterns_to_run.append(pat)
+
         result = text
         total_count = 0
-        for pattern in self.redact_patterns:
+        for pattern in patterns_to_run:
             if not pattern:
                 continue
             result, count = safe_regex_subn(pattern, "[REDACTED]", result, timeout=0.05)

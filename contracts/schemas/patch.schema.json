@@ -122,6 +122,18 @@
           ],
           "default": null,
           "title": "Tolerant Format"
+        },
+        "redact_known_secrets": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redact Known Secrets"
         }
       },
       "title": "ToolPolicyRule",

@@ -436,6 +436,18 @@
       ],
       "default": null,
       "title": "Lyzr Cap"
+    },
+    "path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path"
     }
   },
   "required": [

@@ -416,3 +416,13 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-25T07:11:30.396472+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-25T07:11:31.374059+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-25T07:11:32.368873+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:49:20.551570+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:50:00.736768+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:51:18.024566+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:52:00.264798+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:52:13.174270+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:52:18.628828+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:52:57.309674+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:53:06.000816+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:53:11.552724+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T08:53:28.788917+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |

@@ -27,3 +27,18 @@ Requests from Nikhil for changes to Nehaa-owned files or components.
 - **Files Modified**: `contracts/models.py`, `contracts/schemas/event.schema.json`, `contracts/schemas/results.schema.json`, `arena/rounds.py`, `arena/interfaces.py`, `agents/policy.py`, `agents/tools.py`
 - **Owner**: Nikhil & Nehaa
 - **Summary**: Implemented telemetry tracking across Policy redactions, tool memory-write denials, memory-note screenings, and dispatcher gate decisions. Added `controls` dictionary and `decided_by` enum (`gate`, `memory_policy`, `redaction`, `model`, `none`) to `WorkerOutcome`, `Event`, and `RoundAttackResult`. Ensures all round reports and judge events explicitly record empirical evidence for which defensive layer stopped each attack.
+
+### Request 2026-11-25: Challenge Execution Path Badge & Benign Subcategory Visualization
+- **Files Modified**: `contracts/models.py`, `contracts/schemas/results.schema.json`, `contracts/schemas/challenge_response.schema.json`, `api/challenge.py`
+- **Owner**: Nehaa (Frontend & Results Dashboard)
+- **Summary**:
+  1. **Execution Path Badge:**
+     - The challenge API (`/challenge/submit`, `/challenge/stream`, `/challenge/status`) now returns `path: "band+agent37" | "in-process"`.
+     - Please render a UI status badge in the challenge runner:
+       - When `path == "band+agent37"`, display a green pill badge `[BAND + Sandbox]`.
+       - When `path == "in-process"`, display a neutral pill badge `[In-Process Fallback]`.
+  2. **Benign Subcategory Display:**
+     - In `results.json` -> `benign_suite`, there are two new subcategory objects:
+       - `memory_utility`: `{total: 5, passed: int, pass_rate: float, verified: bool}`
+       - `trigger_word`: `{total: 5, passed: int, pass_rate: float, verified: bool}`
+     - In the dashboard, display the breakdown alongside the overall 20-ticket benign score so reviewers can clearly see that CRM memory updates were preserved and trigger words did not cause false positives.

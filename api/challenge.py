@@ -14,13 +14,49 @@ import sqlite3
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from arena.factory import get_gate, get_sandbox, get_transport
-from arena.interfaces import Envelope
+from arena.interfaces import Envelope, Transport
 from arena.judge import judge
 
 DB_PATH = Path("data/leaderboard.db")
+
+
+# ------------------------------------------------------------------------------
+# Circuit Breaker for BAND Transport
+# ------------------------------------------------------------------------------
+class CircuitBreaker:
+    def __init__(self, failure_threshold: int = 3, cooldown_seconds: float = 300.0):
+        self.failure_threshold = failure_threshold
+        self.cooldown_seconds = cooldown_seconds
+        self.consecutive_failures = 0
+        self.tripped_until = 0.0
+
+    def is_open(self) -> bool:
+        if self.tripped_until > 0:
+            if time.time() < self.tripped_until:
+                return True
+            self.tripped_until = 0.0
+        return False
+
+    def record_failure(self):
+        self.consecutive_failures += 1
+        if self.consecutive_failures >= self.failure_threshold:
+            self.tripped_until = time.time() + self.cooldown_seconds
+
+    def record_success(self):
+        self.consecutive_failures = 0
+        self.tripped_until = 0.0
+
+    def get_status(self) -> dict[str, Any]:
+        open_state = self.is_open()
+        remaining = max(0, int(self.tripped_until - time.time())) if open_state else 0
+        return {
+            "state": "open" if open_state else "closed",
+            "consecutive_failures": self.consecutive_failures,
+            "cooldown_remaining_s": remaining,
+        }
 
 
 # ------------------------------------------------------------------------------
@@ -233,22 +269,32 @@ def load_presets() -> list[dict[str, Any]]:
     return presets
 
 
+_last_patch_cache: dict[str, Any] | None = None
+_last_patch_mtime: float = 0.0
+
+
 def get_last_applied_patch() -> dict[str, Any] | None:
-    """Retrieves the last applied patch from results.json for L2 challenge mode."""
+    """Retrieves the last applied patch from results.json with mtime caching for L2 challenge mode."""
+    global _last_patch_cache, _last_patch_mtime
     results_path = Path("data/results.json")
     if not results_path.exists():
         results_path = Path("data/mock/results.json")
     if results_path.exists():
         try:
+            mtime = results_path.stat().st_mtime
+            if _last_patch_cache is not None and _last_patch_mtime == mtime:
+                return _last_patch_cache
             with open(results_path, "r", encoding="utf-8") as f:
                 res = json.load(f)
             patches = res.get("patches", [])
             for p in reversed(patches):
                 if p.get("status") == "applied" and p.get("patch"):
-                    return p.get("patch")
+                    _last_patch_cache = p.get("patch")
+                    _last_patch_mtime = mtime
+                    return _last_patch_cache
         except Exception:
             pass
-    return None
+    return _last_patch_cache
 
 
 # ------------------------------------------------------------------------------
@@ -263,6 +309,7 @@ class AttemptState:
         self.created_at = time.time()
         self.subscribers: list[asyncio.Queue] = []
         self.done = False
+        self.path: str = "in-process"
 
     def emit_event(self, event_type: str, data: dict[str, Any]):
         payload = {"event": event_type, "data": data}
@@ -279,7 +326,7 @@ class AttemptState:
         self.done = True
 
     def set_error(self, reason: str):
-        err = {"reason": reason}
+        err = {"reason": reason, "path": self.path}
         self.emit_event("error", err)
         self.done = True
 
@@ -287,15 +334,48 @@ class AttemptState:
 class ChallengeManager:
     """
     Manages single-worker queue, active attempts, and SSE subscriber feeds.
+    Includes circuit breaker and automated transport selector between BAND and loopback.
     """
 
     def __init__(self):
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=10)
         self.attempts: dict[str, AttemptState] = {}
         self._worker_running = False
+        self.circuit_breaker = CircuitBreaker()
+        self.dispatcher_agent: Any = None
+        self.dispatcher_task: asyncio.Task | None = None
 
     def get_queue_depth(self) -> int:
         return self.queue.qsize()
+
+    def get_circuit_breaker_status(self) -> dict[str, Any]:
+        return self.circuit_breaker.get_status()
+
+    async def ensure_dispatcher_running(self) -> bool:
+        if self.dispatcher_agent is not None and getattr(self.dispatcher_agent, "is_running", False):
+            return True
+        try:
+            from agents.dispatcher_band import BandDispatcherAgent
+            self.dispatcher_agent = BandDispatcherAgent()
+            self.dispatcher_task = asyncio.create_task(self.dispatcher_agent.run(interval_s=0.5))
+            await self.dispatcher_agent.wait_ready(timeout_s=3.0)
+            return True
+        except Exception:
+            return False
+
+    def stop_dispatcher(self):
+        if self.dispatcher_agent:
+            try:
+                self.dispatcher_agent.stop()
+            except Exception:
+                pass
+        if self.dispatcher_task:
+            try:
+                self.dispatcher_task.cancel()
+            except Exception:
+                pass
+        self.dispatcher_agent = None
+        self.dispatcher_task = None
 
     def get_attempt(self, attempt_id: str) -> AttemptState | None:
         self._prune_old_attempts()
@@ -344,6 +424,108 @@ class ChallengeManager:
         finally:
             self._worker_running = False
 
+    async def check_band_viable(self, sandbox: Any = None) -> bool:
+        """
+        Auto selection rule: use BAND if:
+        (1) sandbox is pingable,
+        (2) worker ready marker is fresh (< 30s) or pid is alive,
+        (3) BAND room is reachable (read-only check),
+        (4) Dispatcher listener is running in API process,
+        (5) BAND keys are present;
+        Otherwise returns False.
+        """
+        if self.circuit_breaker.is_open():
+            return False
+
+        # (5) BAND keys present
+        a_key = os.getenv("BAND_AGENT_A_KEY")
+        room_id = os.getenv("BAND_ROOM_ID", "0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e")
+        if not a_key or not room_id:
+            return False
+
+        if sandbox is None:
+            sandbox = get_sandbox()
+
+        # (1) Sandbox pingable
+        try:
+            if not await sandbox.ping():
+                return False
+        except Exception:
+            return False
+
+        # (2) Worker ready marker / process alive
+        try:
+            if hasattr(sandbox, "exec_command"):
+                res = await sandbox.exec_command("ps aux | grep -v grep | grep worker_band")
+                if res.get("exit_code") != 0:
+                    return False
+        except Exception:
+            pass
+
+        # (3) BAND room reachable
+        try:
+            from band_rest import RestClient
+            c = RestClient(api_key=a_key)
+            c.agent_api_messages.list_agent_messages(room_id, limit=1)
+        except Exception:
+            return False
+
+        # (4) Dispatcher listener running in API process
+        try:
+            ok = await self.ensure_dispatcher_running()
+            if not ok or not (self.dispatcher_agent and getattr(self.dispatcher_agent, "is_running", False)):
+                return False
+        except Exception:
+            return False
+
+        return True
+
+    async def resolve_transport(self, sandbox: Any, gate: Any) -> tuple[Any, str]:
+        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in ("1", "true", "yes")
+        challenge_transport = os.getenv("CHALLENGE_TRANSPORT", "auto").strip().lower()
+
+        if use_mocks:
+            from arena.mocks import MockTransport
+            t = MockTransport(sandbox=sandbox, gate=gate)
+            return t, "in-process"
+
+        if challenge_transport == "loopback":
+            from arena.transport_loopback import LoopbackTransport
+            t = LoopbackTransport(state_dir=getattr(sandbox, "state_dir", Path("data/loopback_state")))
+            if hasattr(t, "dispatcher") and t.dispatcher is not None:
+                t.dispatcher.gate = gate
+            return t, "in-process"
+
+        if challenge_transport == "band":
+            from arena.transport_band import BandTransport
+            t = BandTransport(sandbox=sandbox)
+            return t, "band+agent37"
+
+        # "auto" mode
+        is_band_viable = await self.check_band_viable(sandbox)
+        if is_band_viable:
+            from arena.transport_band import BandTransport
+            t = BandTransport(sandbox=sandbox)
+            return t, "band+agent37"
+
+        # Fallback to loopback
+        from arena.transport_loopback import LoopbackTransport
+        t = LoopbackTransport(state_dir=getattr(sandbox, "state_dir", Path("data/loopback_state")))
+        if hasattr(t, "dispatcher") and t.dispatcher is not None:
+            t.dispatcher.gate = gate
+        return t, "in-process"
+
+    async def get_current_path(self) -> str:
+        challenge_transport = os.getenv("CHALLENGE_TRANSPORT", "auto").strip().lower()
+        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in ("1", "true", "yes")
+        if use_mocks or challenge_transport == "loopback":
+            return "in-process"
+        if challenge_transport == "band":
+            return "band+agent37"
+        if await self.check_band_viable():
+            return "band+agent37"
+        return "in-process"
+
     async def _process_attempt(self, state: AttemptState):
         req = state.req_data
         level = req["level"]
@@ -355,6 +537,7 @@ class ChallengeManager:
 
         # 1. Preset replay path (0 live calls)
         if preset_id:
+            state.path = "in-process"
             presets = load_presets()
             matching_preset = next((p for p in presets if p["id"] == preset_id), None)
             if matching_preset and level in matching_preset["outcomes"]:
@@ -399,6 +582,7 @@ class ChallengeManager:
                     "outcome": outcome,
                     "stopped_by": stopped_by,
                     "goal": goal,
+                    "path": "in-process",
                     "gate": {
                         "decision": "INJECTION" if stopped_by == "gate" else "SAFE",
                         "confidence": 0.98 if stopped_by == "gate" else 0.04,
@@ -415,32 +599,8 @@ class ChallengeManager:
         sandbox = get_sandbox()
         gate = get_gate()
 
-        use_mocks = os.getenv("USE_MOCKS", "1").strip().lower() in ("1", "true", "yes")
-        challenge_transport = os.getenv("CHALLENGE_TRANSPORT", "").strip().lower()
-        if not challenge_transport:
-            challenge_transport = "mock" if use_mocks else "loopback"
-
-        if challenge_transport == "loopback":
-            from arena.transport_loopback import LoopbackTransport
-            transport = LoopbackTransport(
-                dispatcher=None,
-                worker=None,
-                state_dir=getattr(sandbox, "state_dir", Path("data/loopback_state")),
-            )
-            # Wire screening gate to Dispatcher in loopback transport
-            if hasattr(transport, "dispatcher") and transport.dispatcher is not None:
-                transport.dispatcher.gate = gate
-        elif challenge_transport == "band":
-            from arena.transport_band import BandTransport
-            transport = BandTransport(sandbox=sandbox)
-        else:
-            transport = get_transport()
-
-        # Wire in-memory mock instances together
-        if hasattr(transport, "sandbox"):
-            transport.sandbox = sandbox
-        if hasattr(transport, "gate"):
-            transport.gate = gate
+        transport, path = await self.resolve_transport(sandbox, gate)
+        state.path = path
 
         # Check worker health
         try:
@@ -455,27 +615,41 @@ class ChallengeManager:
         # Fresh canary & clean sandbox state
         canary = f"CANARY-{secrets.token_hex(3)}-DEMO-ONLY"
         await sandbox.reset_state(canary)
+        if hasattr(transport, "reset_state"):
+            await transport.reset_state(canary)
 
         # L2 challenge mode: load the last applied patch from results.json
         if level == "L2":
             last_patch = get_last_applied_patch()
-            if last_patch:
-                await sandbox.install_patch(last_patch)
+            if path == "band+agent37":
+                if last_patch:
+                    await sandbox.install_patch(last_patch)
+                    if hasattr(sandbox, "exec_command"):
+                        for _ in range(5):
+                            check_res = await sandbox.exec_command("cat /home/node/.trustfall/patch_applied.json 2>/dev/null || cat /home/node/patch_applied.json 2>/dev/null")
+                            if check_res.get("stdout"):
+                                try:
+                                    p_app = json.loads(check_res["stdout"])
+                                    if p_app.get("version") == last_patch.get("version"):
+                                        break
+                                except Exception:
+                                    pass
+                            await asyncio.sleep(0.5)
+            else:
+                from agents.policy import Policy
+                from contracts.models import Patch
+                policy_obj = Policy(Patch.model_validate(last_patch)) if last_patch else Policy(None)
+                if hasattr(transport, "worker") and transport.worker:
+                    transport.worker.policy = policy_obj
         else:
             # Clear patch for L0/L1 baseline
-            if hasattr(sandbox, "state_dir") and sandbox.state_dir:
-                p_file = Path(sandbox.state_dir) / "patch.json"
-                if p_file.exists():
-                    try:
-                        p_file.unlink()
-                    except Exception:
-                        pass
-                app_file = Path(sandbox.state_dir) / "patch_applied.json"
-                if app_file.exists():
-                    try:
-                        app_file.unlink()
-                    except Exception:
-                        pass
+            if path == "band+agent37":
+                if hasattr(sandbox, "exec_command"):
+                    await sandbox.exec_command("rm -f /home/node/patch.json /home/node/.trustfall/patch_applied.json /home/node/patch_applied.json")
+            else:
+                from agents.policy import Policy
+                if hasattr(transport, "worker") and transport.worker:
+                    transport.worker.policy = Policy(None)
 
         # Step: Gate screening
         start_t = time.perf_counter()
@@ -497,6 +671,7 @@ class ChallengeManager:
                 "outcome": "blocked_by_gate",
                 "stopped_by": "gate",
                 "goal": goal,
+                "path": path,
                 "gate": {
                     "decision": gate_res.decision,
                     "confidence": gate_res.confidence,
@@ -526,11 +701,30 @@ class ChallengeManager:
         try:
             outcome = await asyncio.wait_for(transport.send_ticket(env, timeout_s=45.0), timeout=45.0)
         except TimeoutError:
+            if path == "band+agent37":
+                self.circuit_breaker.record_failure()
             state.set_error(reason="timeout")
             return
         except Exception:
+            if path == "band+agent37":
+                self.circuit_breaker.record_failure()
             state.set_error(reason="worker_down")
             return
+
+        if outcome.error == "timeout":
+            if path == "band+agent37":
+                self.circuit_breaker.record_failure()
+            state.set_error(reason="timeout")
+            return
+        elif outcome.error:
+            if path == "band+agent37":
+                self.circuit_breaker.record_failure()
+            state.set_error(reason="worker_down")
+            return
+
+        # Success on BAND
+        if path == "band+agent37":
+            self.circuit_breaker.record_success()
 
         state.emit_event(
             "step",
@@ -559,6 +753,7 @@ class ChallengeManager:
             "outcome": judge_res.outcome,
             "stopped_by": stopped_by,
             "goal": goal,
+            "path": path,
             "gate": {
                 "decision": outcome.gate.decision if outcome.gate else ("SAFE" if level == "L0" else "SAFE"),
                 "confidence": outcome.gate.confidence if outcome.gate else 0.05,

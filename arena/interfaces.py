@@ -49,6 +49,7 @@ class WorkerOutcome(BaseModel):
     memory_note_blocked: Optional[bool] = Field(default=None, description="True if one or more memory notes were dropped by gate screening")
     controls: Dict[str, Any] = Field(default_factory=dict, description="Detailed evidence of controls triggered: gate_blocked, redactions, memory_denials, memory_notes_blocked")
     decided_by: Optional[DecidedBy] = Field(default="none", description="Primary control that decided outcome: gate, memory_policy, redaction, model, none")
+    path: Optional[str] = Field(default=None, description="Execution transport path: band+agent37 or in-process")
 
 
 @runtime_checkable

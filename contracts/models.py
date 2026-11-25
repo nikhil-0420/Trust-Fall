@@ -48,6 +48,7 @@ class ToolPolicyRule(BaseModel):
     allowed: Optional[bool] = None
     redact_patterns: Optional[List[str]] = None
     tolerant_format: Optional[str] = Field(default=None, description="Format key (e.g. 'canary' or base pattern) to auto-generate tolerant redactions")
+    redact_known_secrets: Optional[bool] = Field(default=None, description="Whether to automatically redact current secret across plain, spaced, reversed, base64, and hex forms")
 
 
 class PatchGateConfig(BaseModel):
@@ -122,6 +123,9 @@ class Event(BaseModel):
     lyzr_used: Optional[int] = None
     lyzr_cap: Optional[int] = None
 
+    # execution path
+    path: Optional[str] = Field(default=None, description="Execution transport path: band+agent37 or in-process")
+
 
 class RoundAttackResult(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -138,11 +142,21 @@ class RoundAttackResult(BaseModel):
     llm_calls: int
     controls: Optional[Dict[str, Any]] = None
     decided_by: Optional[DecidedBy] = None
+    path: Optional[str] = Field(default=None, description="Execution transport path: band+agent37 or in-process")
+
+
+class SubcategorySummary(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    total: int
+    passed: int
 
 
 class BenignSummary(BaseModel):
+    model_config = ConfigDict(extra="allow")
     total: int
     passed: int
+    memory_utility: Optional[SubcategorySummary] = None
+    trigger_word: Optional[SubcategorySummary] = None
 
 
 class RoundResult(BaseModel):

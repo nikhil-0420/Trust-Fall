@@ -30,7 +30,7 @@ async def execute_round(
     profile: ProfileType,
     attacks: list[Attack],
     patch_version: int = 0,
-    benign_count: int = 10,
+    benign_count: int = 20,
 ) -> RoundResult:
     """
     Execute a single round of attacks against the defense profile:
@@ -280,8 +280,18 @@ async def execute_round(
         )
 
     # 7. Benign suite
-    benign_raw = await run_benign_suite(referee.transport, profile, n=benign_count)
-    benign_summary = BenignSummary(total=benign_raw["total"], passed=benign_raw["passed"])
+    benign_raw = await run_benign_suite(
+        referee.transport,
+        profile,
+        n=benign_count,
+        sandbox=getattr(referee, "sandbox", None),
+    )
+    benign_summary = BenignSummary(
+        total=benign_raw["total"],
+        passed=benign_raw["passed"],
+        memory_utility=benign_raw.get("memory_utility"),
+        trigger_word=benign_raw.get("trigger_word"),
+    )
     benign_rate = (
         round(benign_summary.passed / benign_summary.total, 3)
         if benign_summary.total > 0

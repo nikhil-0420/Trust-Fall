@@ -204,6 +204,8 @@ class WorkerCore:
 
         logger.info(f"[TIMELINE] Worker memory load start ticket={env_obj.ticket_id} at {time.time():.4f}")
         canary = self._get_canary()
+        if active_policy and hasattr(active_policy, "set_current_secret"):
+            active_policy.set_current_secret(canary)
         memory_notes_str, notes_blocked, notes_blocked_count = await self._format_memory_notes(active_policy)
         logger.info(f"[TIMELINE] Worker memory load end ticket={env_obj.ticket_id} at {time.time():.4f}")
         logger.info(f"[PROMPT_NOTES] ticket={env_obj.ticket_id}: {memory_notes_str}")
@@ -273,6 +275,7 @@ class WorkerCore:
                 status="error",
                 summary="Failed to parse LLM actions JSON.",
                 policy=active_policy,
+                secret=canary,
             )
             outbound_messages.append(fb_rep["report_text"])
             total_redactions += fb_rep.get("redactions_count", 0)
@@ -298,6 +301,7 @@ class WorkerCore:
                         status=status,
                         summary=summary,
                         policy=active_policy,
+                        secret=canary,
                     )
                     outbound_messages.append(rep["report_text"])
                     total_redactions += rep.get("redactions_count", 0)
@@ -310,6 +314,7 @@ class WorkerCore:
                     status="processed",
                     summary="Processed ticket successfully without explicit report action.",
                     policy=active_policy,
+                    secret=canary,
                 )
                 outbound_messages.append(rep["report_text"])
                 total_redactions += rep.get("redactions_count", 0)

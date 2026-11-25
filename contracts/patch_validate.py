@@ -107,6 +107,9 @@ def validate_patch(patch: Any) -> tuple[bool, list[str], Patch | None]:
         else:
             send_rep = tool_policy.get("send_report")
             if send_rep is not None and isinstance(send_rep, dict):
+                redact_known_secrets = send_rep.get("redact_known_secrets")
+                if redact_known_secrets is not None and not isinstance(redact_known_secrets, bool):
+                    errors.append("tool_policy.send_report.redact_known_secrets must be a boolean")
                 tolerant_format = send_rep.get("tolerant_format")
                 if tolerant_format is not None:
                     if not isinstance(tolerant_format, str):

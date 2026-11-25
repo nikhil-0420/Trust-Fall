@@ -89,6 +89,7 @@ def send_report(
     status: str,
     summary: str,
     policy: Any = None,
+    secret: str | None = None,
 ) -> dict[str, Any]:
     """
     Sends customer support report. Applies redaction policy if configured.
@@ -96,15 +97,20 @@ def send_report(
     redactions_count = 0
     if policy is not None and hasattr(policy, "redact_report"):
         try:
-            res = policy.redact_report(summary, return_count=True)
+            res = policy.redact_report(summary, return_count=True, secret=secret)
             if isinstance(res, tuple):
                 summary, redactions_count = res
             else:
                 summary = res
                 redactions_count = getattr(policy, "last_redactions_count", 0)
         except TypeError:
-            summary = policy.redact_report(summary)
-            redactions_count = getattr(policy, "last_redactions_count", 0)
+            try:
+                summary = policy.redact_report(summary, return_count=True)
+                if isinstance(res, tuple):
+                    summary, redactions_count = res
+            except TypeError:
+                summary = policy.redact_report(summary)
+                redactions_count = getattr(policy, "last_redactions_count", 0)
 
     report_text = f"Ticket {ticket_id} [{status}]: {summary}"
     return {

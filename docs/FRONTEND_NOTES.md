@@ -27,3 +27,31 @@ Once the live evaluation run completes:
 - The actual execution results will be written by the Referee to `data/results.json` (and `data/events/*.jsonl`).
 - The API serves real results at `GET /api/results` and SSE event streams at `GET /api/events/{round}`.
 - Setting `VITE_USE_MOCK=false` in `web/.env` configures the frontend to query the live backend API rather than the static mock files.
+
+## 4. Execution Path & Badge Display (`band+agent37` vs `in-process`)
+
+Every break attempt verdict, the SSE `verdict` event, and `GET /api/break/{id}` now contain a `path` field:
+- `"band+agent37"`: Real BAND multi-agent message transport with live Agent37 sandbox worker.
+- `"in-process"`: Deterministic in-process loopback simulation (WorkerCore + Gate).
+
+Additionally, `GET /api/status` provides:
+```json
+{
+  "mode": "live",
+  "worker": "up",
+  "transport": "auto",
+  "path": "band+agent37",
+  "circuit_breaker": {
+    "state": "closed",
+    "consecutive_failures": 0,
+    "cooldown_remaining_s": 0
+  }
+}
+```
+
+### UI Badge Recommendation for Nehaa:
+Place a badge in the Challenge / Break results panel and in the status header:
+- `path === "band+agent37"`: **`🟢 Live Multi-Agent (BAND + Sandbox)`** (with tooltip indicating real agent communication over BAND protocol)
+- `path === "in-process"`: **`🔵 In-Process Simulation`** (with tooltip indicating circuit breaker fallback or local loopback execution)
+
+When the circuit breaker is open (`circuit_breaker.state === "open"`), display a warning chip indicating automatic 5-minute fallback to loopback with `cooldown_remaining_s` countdown.

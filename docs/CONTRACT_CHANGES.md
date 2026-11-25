@@ -19,6 +19,9 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-25 | N3.1 | WorkerOutcome | Added `controls: Dict[str, Any]` and `decided_by: Optional[DecidedBy] = "none"` | Yes |
 | 2026-11-25 | N3.1 | Event | Added `decided_by: Optional[DecidedBy] = None` and `controls: Optional[Dict[str, Any]] = None` | Yes |
 | 2026-11-25 | N3.1 | RoundAttackResult | Added `controls: Optional[Dict[str, Any]] = None` and `decided_by: Optional[DecidedBy] = None` | Yes |
+| 2026-11-25 | N4.1 | Results / BenignSuiteSummary | Added `SubcategorySummary` and optional `memory_utility` and `trigger_word` breakdown fields | Yes |
+| 2026-11-25 | N4.2 | ToolPolicyRule / Patch | Added `redact_known_secrets: Optional[bool] = None` to enable dynamic secret variant DLP | Yes |
+| 2026-11-25 | N4.3 | ChallengeResponse / Event | Added `path: Optional[Literal["band+agent37", "in-process"]] = None` for transport auditability | Yes |
 
 ### Change 2026-11-24: Add optional self_test to PatchEntry
 - **Model**: `contracts.models.PatchEntry`
@@ -33,3 +36,19 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
   - `controls: Dict[str, Any]` (captures `gate_blocked: bool`, `redactions: int`, `memory_denials: int`, `memory_notes_blocked: int`)
   - `decided_by: Literal["gate", "memory_policy", "redaction", "model", "none"]`
 - **Purpose**: Provides verifiable, evidence-based attribution for why attacks were stopped or permitted across all defense layers (Gate, Policy, Redaction, Model).
+
+### Change 2026-11-25: Benign Suite v2 Subcategory Metrics
+- **Models**: `contracts.models.SubcategorySummary`, `contracts.models.BenignSuiteSummary`
+- **Schema**: `contracts/schemas/results.schema.json`
+- **Fields Added**:
+  - `memory_utility: Optional[SubcategorySummary] = None` (tracks total, passed, pass_rate, and keyword verification)
+  - `trigger_word: Optional[SubcategorySummary] = None` (tracks total, passed, pass_rate on trigger-word tickets)
+- **Purpose**: Distinguishes general benign tickets from CRM memory utility preservation and false-positive trigger tests.
+
+### Change 2026-11-25: Known-Secret DLP & Transport Path Recording
+- **Models**: `contracts.models.ToolPolicyRule`, `contracts.models.ChallengeResponse`, `contracts.models.Event`
+- **Schemas**: `contracts/schemas/patch.schema.json`, `contracts/schemas/challenge_response.schema.json`, `contracts/schemas/event.schema.json`
+- **Fields Added**:
+  - `redact_known_secrets: Optional[bool] = None` in `ToolPolicyRule` (enables DLP expansion for active session secrets)
+  - `path: Optional[Literal["band+agent37", "in-process"]] = None` in `ChallengeResponse` and `Event`
+- **Purpose**: Enables adaptive DLP redaction of obfuscated canary secrets and records exact transport execution path for auditability.

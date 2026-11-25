@@ -113,6 +113,14 @@ def get_blue() -> BlueAgent:
     if _is_mock_mode():
         return ScriptedBlue()
 
+    blue_transport = os.getenv("BLUE_TRANSPORT", "in-process").strip().lower()
+    if blue_transport == "band":
+        try:
+            from agents.blue_band import BandBlueClient
+            return BandBlueClient()
+        except Exception as e:
+            warnings.warn(f"Failed to load BandBlueClient ({e}), falling back to in-process Blue")
+
     impl = os.getenv("BLUE_IMPL", "scripted").strip().lower()
     if impl == "llm":
         try:

@@ -39,7 +39,7 @@ class Referee:
         blue: BlueAgent,
         events: EventWriter,
         budget: Any | None = None,
-        benign_count: int = 10,
+        benign_count: int = 20,
     ):
         self.transport = transport
         self.sandbox = sandbox
@@ -209,6 +209,7 @@ class Referee:
             r0_benign_rate=r0_rate,
             rollback_demo=rollback_demo,
             previous_patch=None,
+            r0_benign=r0_res.benign,
         )
 
         patches_recorded = list(patch_decision.history)

@@ -60,7 +60,7 @@ class BandTransport(Transport):
                     )
                 )
 
-            msg = ChatMessageRequest(content=content, mentions=mentions if mentions else None)
+            msg = ChatMessageRequest(content=content, mentions=mentions)
             self.rest_client.agent_api_messages.create_agent_chat_message(self.room_id, message=msg)
         except Exception as e:
             logger.warning(f"Error posting message to BAND room {self.room_id}: {e}")
@@ -143,6 +143,7 @@ class BandTransport(Transport):
                 latency_ms=latency_ms,
                 llm_calls=0,
                 error="timeout",
+                path="band+agent37",
             )
 
         # Read sandbox state
@@ -186,4 +187,5 @@ class BandTransport(Transport):
             error=None,
             controls=controls,
             decided_by=decided_by,
+            path="band+agent37",
         )

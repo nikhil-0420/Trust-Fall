@@ -135,10 +135,16 @@ async def get_status() -> dict[str, Any]:
 
     worker_status = "up" if worker_healthy else "down"
     challenge_mgr = get_challenge_manager()
+    current_path = await challenge_mgr.get_current_path()
+    breaker_status = challenge_mgr.get_circuit_breaker_status()
+    transport_mode = os.getenv("CHALLENGE_TRANSPORT", "auto").strip().lower()
 
     return {
         "mode": mode,
         "worker": worker_status,
+        "transport": transport_mode,
+        "path": current_path,
+        "circuit_breaker": breaker_status,
         "queue_depth": challenge_mgr.get_queue_depth(),
         "levels": {
             "L0": {"name": "Baseline", "block_rate": 0.0, "latency_ms": 1200},
@@ -415,6 +421,7 @@ async def get_break_verdict(attempt_id: str) -> dict[str, Any]:
             "error": err_ev.get("reason", "unknown_error"),
             "level": state.req_data.get("level"),
             "goal": state.req_data.get("goal"),
+            "path": getattr(state, "path", "in-process"),
         }
 
     if not state.done:

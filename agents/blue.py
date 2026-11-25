@@ -24,7 +24,9 @@ DEFAULT_SAFE_PATCH = {
     },
     "tool_policy": {
         "send_report": {
-            "redact_patterns": ["CANARY-[A-Za-z0-9]+-DEMO-ONLY"]
+            "redact_patterns": ["CANARY-[A-Za-z0-9]+-DEMO-ONLY"],
+            "tolerant_format": "canary",
+            "redact_known_secrets": True,
         },
         "write_memory": {"allowed": True},
     },
@@ -90,6 +92,7 @@ class ScriptedBlue(BlueAgent):
                 "send_report": {
                     "redact_patterns": redact_patterns,
                     "tolerant_format": "canary",
+                    "redact_known_secrets": True,
                 },
                 "write_memory": {"allowed": True},
             },
