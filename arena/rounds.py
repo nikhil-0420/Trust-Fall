@@ -336,4 +336,5 @@ async def execute_round(
         lyzr_calls=referee.events.lyzr_calls,
         errors=persistent_errors,
         skipped_budget=skipped_budget_count,
+        gate_false_positives=benign_raw.get("gate_false_positives"),
     )

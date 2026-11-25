@@ -159,6 +159,12 @@ class BenignSummary(BaseModel):
     trigger_word: Optional[SubcategorySummary] = None
 
 
+class GateFalsePositives(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    count: int = 0
+    tickets: List[Dict[str, Any]] = Field(default_factory=list)
+
+
 class RoundResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -175,6 +181,7 @@ class RoundResult(BaseModel):
     llm_calls: int
     lyzr_calls: int
     errors: Optional[int] = Field(default=0, description="Count of worker execution errors excluded from ASR and retried")
+    gate_false_positives: Optional[GateFalsePositives] = Field(default=None, description="Benign tickets blocked by pre-dispatch gate (never counts against defender patch)")
 
 
 class PatchEntry(BaseModel):
@@ -213,3 +220,4 @@ class Results(BaseModel):
     blue_input: Optional[str] = Field(default=None, description="Incident log source for Blue: R1 or R0+R1")
     components: Optional[Dict[str, Any]] = Field(default=None, description="Execution component details (e.g. LLM/scripted)")
     transport: Optional[str] = Field(default=None, description="Transport layer used: band or loopback")
+    gate_false_positives: Optional[Dict[str, Any]] = Field(default=None, description="Aggregate gate false positives across rounds (never counts against defender patch)")

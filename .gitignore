@@ -24,6 +24,12 @@ web/build/
 data/runs/
 data/cache/
 data/loopback_state/
+data/*verification*.json
+data/*calibration*.json
+data/*tickets*.json
+data/*room*.json
+data/*summary*.json
+data/*latency*.json
 *.db
 *.log
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Protocol, runtime_checkab
 from pydantic import BaseModel, ConfigDict, Field
 from contracts.models import Attack
 
-ProfileType = Literal["L0", "L1", "L2"]
+ProfileType = Literal["L0", "L1", "L2", "LP"]
 TicketKind = Literal["attack", "benign", "challenge"]
 GateDecision = Literal["SAFE", "INJECTION", "ERROR"]
 DecidedBy = Literal["gate", "memory_policy", "redaction", "model", "none"]
@@ -17,7 +17,7 @@ class Envelope(BaseModel):
 
     ticket_id: str = Field(..., description="Unique ticket ID")
     attempt_id: Optional[str] = Field(default=None, description="Optional public break attempt ID")
-    profile: ProfileType = Field(..., description="Defense profile L0|L1|L2")
+    profile: ProfileType = Field(..., description="Defense profile L0|L1|L2|LP")
     text: str = Field(..., description="Input payload/text")
     kind: TicketKind = Field(..., description="Ticket type: attack, benign, or challenge")
     attack_id: Optional[str] = Field(default=None, description="Attack ID if known attack")

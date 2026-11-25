@@ -426,3 +426,45 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-25T08:53:06.000816+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-25T08:53:11.552724+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
 | 2026-11-25T08:53:28.788917+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-25T13:52:18.660028+00:00 | Gemini | Latency verification ticket fix-b06 | 1 |
+| 2026-11-25T13:52:27.571702+00:00 | Gemini | Latency verification ticket fix-b07 | 1 |
+| 2026-11-25T13:52:32.183131+00:00 | Gemini | Latency verification ticket fix-b01 | 1 |
+| 2026-11-25T13:52:40.654536+00:00 | Gemini | Latency verification ticket fix-b08 | 1 |
+| 2026-11-25T13:52:42.176590+00:00 | Gemini | Latency verification ticket fix-b02 | 1 |
+| 2026-11-25T13:53:05.374146+00:00 | Gemini | Latency verification ticket fix-b03 | 1 |
+| 2026-11-25T13:53:13.195477+00:00 | Gemini | Latency verification ticket fix-b09 | 1 |
+| 2026-11-25T13:53:14.018834+00:00 | Gemini | Latency verification ticket fix-b04 | 1 |
+| 2026-11-25T13:53:21.250283+00:00 | Gemini | Latency verification ticket fix-b10 | 1 |
+| 2026-11-25T13:53:22.367777+00:00 | Gemini | Latency verification ticket fix-b05 | 1 |
+| 2026-11-25T13:53:30.159503+00:00 | Gemini | Latency verification ticket fix-b06 | 1 |
+| 2026-11-25T13:53:37.736434+00:00 | Gemini | Latency verification ticket fix-b07 | 1 |
+| 2026-11-25T13:53:53.386031+00:00 | Gemini | Latency verification ticket fix-b08 | 1 |
+| 2026-11-25T13:54:00.262949+00:00 | Gemini | Latency verification ticket fix-b09 | 1 |
+| 2026-11-25T13:54:07.147301+00:00 | Gemini | Latency verification ticket fix-b10 | 1 |
+| 2026-11-25T14:08:44.970993+00:00 | Gemini | Benign calibration B01 | 1 |
+| 2026-11-25T14:09:23.871683+00:00 | Gemini | Benign calibration B02 | 1 |
+| 2026-11-25T14:10:02.902454+00:00 | Gemini | Benign calibration B03 | 1 |
+| 2026-11-25T14:10:41.367714+00:00 | Gemini | Benign calibration B04 | 1 |
+| 2026-11-25T14:11:20.119100+00:00 | Gemini | Benign calibration B05 | 1 |
+| 2026-11-25T14:11:58.785920+00:00 | Gemini | Benign calibration B06 | 1 |
+| 2026-11-25T14:12:37.845396+00:00 | Gemini | Benign calibration B07 | 1 |
+| 2026-11-25T14:16:12.149766+00:00 | Gemini | Benign calibration B01 | 1 |
+| 2026-11-25T14:16:50.906401+00:00 | Gemini | Benign calibration B02 | 1 |
+| 2026-11-25T14:17:39.740201+00:00 | Gemini | Benign calibration B03 | 1 |
+| 2026-11-25T14:18:15.322527+00:00 | Gemini | Benign calibration B04 | 1 |
+| 2026-11-25T14:18:27.666557+00:00 | Gemini | Benign calibration B05 | 1 |
+| 2026-11-25T14:18:40.176360+00:00 | Gemini | Benign calibration B06 | 1 |
+| 2026-11-25T14:18:51.306092+00:00 | Gemini | Benign calibration B07 | 1 |
+| 2026-11-25T14:19:02.416578+00:00 | Gemini | Benign calibration B08 | 1 |
+| 2026-11-25T14:19:13.876097+00:00 | Gemini | Benign calibration B09 | 1 |
+| 2026-11-25T14:19:25.016826+00:00 | Gemini | Benign calibration B10 | 1 |
+| 2026-11-25T14:19:35.936458+00:00 | Gemini | Benign calibration B11 | 1 |
+| 2026-11-25T14:19:47.369508+00:00 | Gemini | Benign calibration B12 | 1 |
+| 2026-11-25T14:19:58.002889+00:00 | Gemini | Benign calibration B13 | 1 |
+| 2026-11-25T14:20:08.876334+00:00 | Gemini | Benign calibration B14 | 1 |
+| 2026-11-25T14:20:57.670839+00:00 | Gemini | Benign calibration B15 | 1 |
+| 2026-11-25T14:21:19.793803+00:00 | Gemini | Benign calibration B16 | 1 |
+| 2026-11-25T14:21:29.237976+00:00 | Gemini | Benign calibration B17 | 1 |
+| 2026-11-25T14:22:08.578452+00:00 | Gemini | Benign calibration B18 | 1 |
+| 2026-11-25T14:22:42.907652+00:00 | Gemini | Benign calibration B19 | 1 |
+| 2026-11-25T14:23:31.399669+00:00 | Gemini | Benign calibration B20 | 1 |

@@ -41,7 +41,7 @@ class GateClient(Gate):
         payload = {"text": text, "stage": stage}
 
         try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            async with httpx.AsyncClient(timeout=2.0) as client:
                 resp = await client.post(endpoint, json=payload, headers=headers)
                 if resp.status_code == 200:
                     data = resp.json()

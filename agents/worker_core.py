@@ -199,8 +199,8 @@ class WorkerCore:
         else:
             env_obj = Envelope(**envelope)
 
-        # Policy enforcement: enforced ONLY at L2; L0 and L1 have no policy enforcement
-        active_policy = self.policy if env_obj.profile == "L2" else None
+        # Policy enforcement: enforced at L2 and internal profile LP (patch-only regression)
+        active_policy = self.policy if env_obj.profile in ("L2", "LP") else None
 
         logger.info(f"[TIMELINE] Worker memory load start ticket={env_obj.ticket_id} at {time.time():.4f}")
         canary = self._get_canary()
@@ -340,12 +340,12 @@ class WorkerCore:
 
         controls = {
             "gate_blocked": False,
-            "redactions": total_redactions if env_obj.profile == "L2" else 0,
-            "memory_denials": memory_denials if env_obj.profile == "L2" else 0,
-            "memory_notes_blocked": notes_blocked_count if env_obj.profile == "L2" else 0,
+            "redactions": total_redactions if env_obj.profile in ("L2", "LP") else 0,
+            "memory_denials": memory_denials if env_obj.profile in ("L2", "LP") else 0,
+            "memory_notes_blocked": notes_blocked_count if env_obj.profile in ("L2", "LP") else 0,
         }
         decided_by = "none"
-        if env_obj.profile == "L2":
+        if env_obj.profile in ("L2", "LP"):
             if controls["memory_denials"] > 0 or controls["memory_notes_blocked"] > 0:
                 decided_by = "memory_policy"
             elif controls["redactions"] > 0:
@@ -363,8 +363,8 @@ class WorkerCore:
             latency_ms=latency_ms,
             llm_calls=llm_calls,
             error=error,
-            policy_denied=policy_denied if env_obj.profile == "L2" else False,
-            memory_note_blocked=notes_blocked if env_obj.profile == "L2" else False,
+            policy_denied=policy_denied if env_obj.profile in ("L2", "LP") else False,
+            memory_note_blocked=notes_blocked if env_obj.profile in ("L2", "LP") else False,
             controls=controls,
             decided_by=decided_by,
         )

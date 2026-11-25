@@ -511,6 +511,19 @@
           "default": 0,
           "description": "Count of worker execution errors excluded from ASR and retried",
           "title": "Errors"
+        },
+        "gate_false_positives": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Benign tickets blocked by pre-dispatch gate (never counts against defender patch)",
+          "title": "Gate False Positives"
         }
       },
       "required": [

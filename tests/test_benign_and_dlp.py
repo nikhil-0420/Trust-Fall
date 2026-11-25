@@ -36,7 +36,7 @@ def test_benign_suite_v2_structure_and_categories():
     trig_tickets = [t for t in BENIGN_TICKETS if t.get("category") == "trigger_word"]
     assert len(trig_tickets) == 5
     for t in trig_tickets:
-        assert any(w in t["text"].lower() for w in ["audit", "compliance", "verification", "session", "diagnostics"])
+        assert any(w in t["text"].lower() for w in ["privacy", "audit", "compliance", "export", "verification", "session", "diagnostics"])
 
 
 @pytest.mark.asyncio

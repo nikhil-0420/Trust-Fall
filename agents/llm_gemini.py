@@ -91,18 +91,7 @@ class GeminiLLM(LLM):
             GeminiLLM._last_call_time = time.time()
 
     def _extract_retry_delay(self, error_str: str, default_wait: float) -> float:
-        match = re.search(r"retry\s+in\s+([0-9.]+)\s*s", error_str, re.IGNORECASE)
-        if match:
-            try:
-                return float(match.group(1)) + 1.0
-            except ValueError:
-                pass
-        match2 = re.search(r"retryDelay':\s*'([0-9]+)s'", error_str, re.IGNORECASE)
-        if match2:
-            try:
-                return float(match2.group(1)) + 1.0
-            except ValueError:
-                pass
+        # Strictly enforce specified retry delays (5s, 15s, 30s) per AGENT_RULES
         return default_wait
 
     async def switch_to_fallback_model(self, error: Exception) -> str:

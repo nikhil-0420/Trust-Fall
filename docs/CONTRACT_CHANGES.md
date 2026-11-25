@@ -22,6 +22,8 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
 | 2026-11-25 | N4.1 | Results / BenignSuiteSummary | Added `SubcategorySummary` and optional `memory_utility` and `trigger_word` breakdown fields | Yes |
 | 2026-11-25 | N4.2 | ToolPolicyRule / Patch | Added `redact_known_secrets: Optional[bool] = None` to enable dynamic secret variant DLP | Yes |
 | 2026-11-25 | N4.3 | ChallengeResponse / Event | Added `path: Optional[Literal["band+agent37", "in-process"]] = None` for transport auditability | Yes |
+| 2026-11-25 | N5.1 | ProfileType / Envelope | Added internal profile `"LP"` (`Literal["L0", "L1", "L2", "LP"]`) for patch-only rollback regression testing | Yes |
+| 2026-11-25 | N5.2 | RoundResult / Results | Added optional `gate_false_positives` to record gate false positives separately from defender patch | Yes |
 
 ### Change 2026-11-24: Add optional self_test to PatchEntry
 - **Model**: `contracts.models.PatchEntry`
@@ -52,3 +54,12 @@ Log of all additions made to frozen contracts (`contracts/`, `arena/interfaces.p
   - `redact_known_secrets: Optional[bool] = None` in `ToolPolicyRule` (enables DLP expansion for active session secrets)
   - `path: Optional[Literal["band+agent37", "in-process"]] = None` in `ChallengeResponse` and `Event`
 - **Purpose**: Enables adaptive DLP redaction of obfuscated canary secrets and records exact transport execution path for auditability.
+
+### Change 2026-11-25: Internal Profile LP and Gate False Positives
+- **Models**: `arena.interfaces.ProfileType`, `contracts.models.RoundResult`, `contracts.models.Results`
+- **Schemas**: `contracts/schemas/results.schema.json`
+- **Fields Added**:
+  - `ProfileType`: Expanded to `Literal["L0", "L1", "L2", "LP"]`.
+  - `gate_false_positives: Optional[GateFalsePositives] = None` in `RoundResult` and `Results`.
+- **Purpose**: Enables internal rollback regression evaluation (`profile="LP"`) where defender patches are strictly enforced while bypassing the pre-dispatch gate. Records pre-dispatch gate false positives on benign suites separately so they never count against candidate defender patches.
+

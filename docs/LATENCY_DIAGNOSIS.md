@@ -2,110 +2,151 @@
 
 **Owner:** Nikhil  
 **Status:** Completed  
-**Qualified Room ID:** `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`  
+**Qualified Fresh Room ID:** `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`  
 **Legacy Room ID:** `2259e40a-1833-49f4-b647-596ac09f99ea`
 
 ---
 
-## 1. Executive Summary & Root Cause
+## 1. Executive Summary & Discrepancy Reconciliation
 
-Live runs over BAND previously exhibited round-trip latencies of 30-45 seconds per ticket, occasionally hitting the 30-second timeout.
+### 1.1 The Latency Discrepancy
+Earlier evaluations reported a 2.94s median round-trip time for direct in-process or mock runs, whereas live multi-hop BAND evaluations exhibited ~7.5s–8.5s baseline latencies, with intermittent spikes exceeding 25–30 seconds.
 
-Through source tracing and live telemetry instrumentation, we identified the primary root causes:
-1. **Gemini Pacing Default (`13.0s`)**: In `agents/llm_gemini.py`, `_min_call_interval` defaulted to 13.0 seconds if `GEMINI_MIN_INTERVAL_S` was unset. When deploying to Agent37 sandbox via `infra/sandbox_deploy.py`, `GEMINI_MIN_INTERVAL_S` was omitted from `/home/node/.trustfall/worker.env`. Every worker step was forced to sleep for at least 13 seconds before issuing an API call, and 26 seconds if any formatting retry occurred.
-2. **REST Polling Transport Multi-Hop**: The live architecture involves 3 network hops across the BAND REST API:
-   - Hop 1: Sender (Test Harness / Red) posts ticket to BAND room.
-   - Hop 2: Dispatcher agent polls BAND, runs input gate screening, and forwards ticket.
-   - Hop 3: Worker agent inside Agent37 sandbox polls BAND, processes ticket via Gemini, and posts worker report back to BAND.
-   - Hop 4: Sender polling loop detects worker report.
-   With polling loops set to 0.5s–1.0s, transport transit overhead alone is ~6.5–7.5 seconds across the 3 asynchronous REST handoffs.
-
----
-
-## 2. Quantitative Baseline vs Post-Fix Comparison
-
-### 2.1 Baseline (Before Fix: 13s Gemini Pacing Active)
-- Room: `2259e40a-1833-49f4-b647-596ac09f99ea` (Old room, 580+ msgs)
-- 5 Sequential Benign Tickets:
-  - `time-b01`: 32,002 ms (Timeout)
-  - `time-b02`: 31,841 ms (Timeout)
-  - `time-b03`: 32,758 ms (Timeout)
-  - `time-b04`: 32,044 ms (Timeout)
-  - `time-b05`: 31,829 ms (Timeout)
-- **Timeouts:** 5 / 5 (100% failure rate at 30s deadline)
-
-### 2.2 Post-Fix: Old Room (`GEMINI_MIN_INTERVAL_S=0`)
-- Room: `2259e40a-1833-49f4-b647-596ac09f99ea`
-- 5 Sequential Benign Tickets:
-  - `post-b01`: 7,811 ms (Success, 0 timeouts)
-  - `post-b02`: 7,484 ms (Success, 0 timeouts)
-  - `post-b03`: 7,376 ms (Success, 0 timeouts)
-  - `post-b04`: 8,346 ms (Success, 0 timeouts)
-  - `post-b05`: 7,750 ms (Success, 0 timeouts)
-- **Median Latency:** 7,750 ms (7.75s)
-- **Timeouts:** 0 / 5 (0%)
-- **Delta:** Worker execution dropped from 30+ seconds to < 1.0 second.
-
-### 2.3 Post-Fix: Qualified Fresh Room (`GEMINI_MIN_INTERVAL_S=0`)
-- Room: `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`
-- 5 Sequential Benign Tickets:
-  - `fresh-b01`: 8,128 ms (Success, 0 timeouts)
-  - `fresh-b02`: 8,551 ms (Success, 0 timeouts)
-  - `fresh-b03`: 9,331 ms (Success, 0 timeouts)
-  - `fresh-b04`: 8,096 ms (Success, 0 timeouts)
-  - `fresh-b05`: 9,170 ms (Success, 0 timeouts)
-- **Median Latency:** 8,551 ms
-- **Timeouts:** 0 / 5 (0%)
-- **Aggregate Post-Fix Timeouts across all 10 tickets:** **0 / 10 (0.0% failure rate)**
+**Root Cause Attribution:**
+1. **Gemini Pacing (`GEMINI_MIN_INTERVAL_S`)**: In `agents/llm_gemini.py`, a fallback pacing delay of 13.0s was active when unset in the sandbox environment. Setting `GEMINI_MIN_INTERVAL_S=0` reduced worker-side processing latency from >30s (timeout) to sub-second (600–900 ms).
+2. **Multi-Hop Asynchronous REST Polling**: The real BAND path traverses 4 distinct network legs:
+   - Leg 1: Sender (Harness / Red) issues `POST /messages` to BAND room (~300–400 ms).
+   - Leg 2: Dispatcher agent polls `GET /messages` on BAND room (polling sleep interval).
+   - Leg 3: Dispatcher forwards signed ticket via `POST /messages` to Worker (~300 ms).
+   - Leg 4: Worker agent inside Agent37 sandbox polls `GET /messages` on BAND room (polling sleep interval).
+   - Leg 5: Worker executes Gemini model call (~600–900 ms).
+   - Leg 6: Worker posts `[Worker Report]` via `POST /messages` (~300 ms).
+   - Leg 7: Sender polling loop polls `GET /messages` until report matches (polling sleep interval).
+   With 1.0s polling sleeps at each step, sleep phase jitter alone accumulated ~5.0s–7.0s of idle waiting time across legs 2, 4, and 7.
+3. **Intermittent Rate-Limit Retries (429/503)**: The occasional 20s+ outliers were caused by Gemini API 429 backoff sleeps (`waits = [5.0, 15.0, 30.0]` in `agents/llm_gemini.py`), NOT transport or serialization stalls.
 
 ---
 
-## 3. High-Resolution Internal Timeline Breakdown
+## 2. Room Recount & Paging Discrepancy
 
-From `/home/node/worker.log` high-resolution telemetry:
+### 2.1 Paging Recount Results
+A full cursor-based pagination recount (`next_cursor` paging via `band_rest.agent_api_messages.list_agent_messages(limit=100)`) was conducted:
+- **Legacy Room (`2259e40a-1833-49f4-b647-596ac09f99ea`)**:
+  - Exactly **594 messages** distributed across **6 pages**.
+  - Page breakdown: Page 1 (100), Page 2 (100), Page 3 (100), Page 4 (100), Page 5 (100), Page 6 (94).
+- **Fresh Qualified Room (`0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`)**:
+  - **42 messages** (initial qualification) growing to **72 messages** after 10-ticket verification, fully contained in **1 page**.
 
-| Ticket ID | Patch Check | Memory Load | LLM Call (Gemini Flash Lite) | Report Post | Total Worker Processing |
+### 2.2 Why Earlier Reports Stated "160+" Messages
+The earlier "160+" figure arose from unpaged queries:
+1. `GET /messages?limit=100` only returned the first 100 messages unless explicit cursor loops were executed.
+2. In early diagnostics, sender-filtered queries or unpaged queries captured only the most recent subset of messages. A complete recursive traversal reveals the full 594 messages.
+
+---
+
+## 3. Environment & Sandbox Inspection
+
+### 3.1 Non-Secret Variables in `worker.env`
+Inspection of `/home/node/.trustfall/worker.env` inside the microVM sandbox revealed:
+- `MODEL_NAME`: `gemini-3.5-flash-lite`
+- `WORKER_PROMPT`: `victim`
+- `STATE_DIR`: `data/worker_state`
+- `GATE_URL`: `fashion-rehabilitation-italia-cache.trycloudflare.com`
+- `USE_MOCKS`: `0`
+- `LIVE_APPROVED`: `1`
+- `LLM_IMPL`: `gemini`
+- `GEMINI_MIN_INTERVAL_S`: `0`
+- `BAND_POLL_INTERVAL_S`: `0.2`
+- `BAND_ROOM_ID`: `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`
+
+### 3.2 Dead Tunnel Diagnosis
+The configured `GATE_URL` tunnel (`fashion-rehabilitation-italia-cache.trycloudflare.com`) was probed via DNS resolution:
+```
+[Errno 11001] getaddrinfo failed: fashion-rehabilitation-italia-cache.trycloudflare.com
+```
+The Cloudflare tunnel had expired after the previous session.
+
+### 3.3 Network Calls at Profile L0
+At profile `L0`, the execution path is strictly minimal:
+- **Input Gate Calls:** **0** (Gate screening is bypassed entirely at L0).
+- **Memory Read Screening Calls:** **0** (Memory gate screening is inactive at L0).
+- **Active Network Calls:**
+  1. BAND REST API `POST /messages` (Sender -> BAND)
+  2. BAND REST API `GET /messages` (Dispatcher polling)
+  3. BAND REST API `POST /messages` (Dispatcher -> Worker)
+  4. BAND REST API `GET /messages` (Worker polling)
+  5. Google Gemini API `POST v1beta/models/gemini-3.5-flash-lite:generateContent` (Worker -> Gemini)
+  6. BAND REST API `POST /messages` (Worker -> BAND)
+  7. BAND REST API `GET /messages` (Sender polling)
+Zero dead-tunnel HTTP requests are issued at L0; dead tunnels do NOT impact L0 latency.
+
+### 3.4 Regex Redaction Overhead Measurement
+Benchmarking regex redaction across 20 representative customer service reports in Python:
+- Uncompiled regex iteration: **0.016 ms (16 µs)** mean per report.
+- Pre-compiled regex cache: **0.010 ms (10 µs)** mean per report.
+- **Verdict:** Regex redaction overhead is under 0.02 ms, completely negligible compared to network transit (< 0.001% of round-trip time).
+
+---
+
+## 4. Fixes Applied
+
+1. **Polling Sleep Interval Reduction**: Reduced polling intervals across `agents/worker_band.py`, `agents/dispatcher_band.py`, and `arena/transport_band.py` from `1.0s` to `0.2s` (`BAND_POLL_INTERVAL_S=0.2`). This eliminates 2.0s–3.0s of dead polling latency per ticket.
+2. **Global Compiled Regex Cache**: Added `_COMPILED_PATTERN_CACHE` with LRU eviction in `agents/policy.py`.
+3. **Httpx Gate Client Timeout**: Tightened gate client timeout from 20.0s to 2.0s in `agents/gate_client.py` to prevent cascading hangs if the gate server is degraded.
+4. **Synchronization of Models & Interfaces**: Deployed updated `arena/interfaces.py`, `contracts/models.py`, `agents/worker_band.py`, and `agents/worker_core.py` to `/home/node/` inside the sandbox, resolving Pydantic `extra_forbidden` validation errors.
+5. **Exact PID Lifecycle Management**: Relaunched worker using exact PID signals without disrupting other microVM services.
+
+---
+
+## 5. Verification: 10-Ticket Sequential Run in Fresh Room
+
+10 sequential benign customer service tickets were executed over the live BAND transport at profile `L0` in fresh room `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`.
+
+### 5.1 Results Table
+
+| Ticket ID | Customer Query | Latency (ms) | Reply Received | Error | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `post-b01` | 0.1 ms | 0.8 ms | 634.7 ms | 52.3 ms | **687.9 ms** |
-| `post-b02` | 0.1 ms | 0.3 ms | 797.5 ms | 55.5 ms | **853.4 ms** |
-| `post-b03` | 0.1 ms | 0.2 ms | 559.0 ms | 46.8 ms | **606.1 ms** |
-| `post-b04` | 0.1 ms | 0.2 ms | 516.3 ms | 48.6 ms | **565.2 ms** |
-| `post-b05` | 0.1 ms | 0.3 ms | 658.4 ms | 50.4 ms | **709.2 ms** |
-| `fresh-b01` | 0.1 ms | 0.3 ms | 851.2 ms | 41.9 ms | **893.5 ms** |
-| `fresh-b02` | 0.1 ms | 0.1 ms | 880.8 ms | 41.2 ms | **922.2 ms** |
-| `fresh-b03` | 0.1 ms | 0.3 ms | 628.7 ms | 35.0 ms | **664.1 ms** |
-| `fresh-b04` | 0.1 ms | 0.3 ms | 913.9 ms | 44.0 ms | **958.3 ms** |
-| `fresh-b05` | 0.1 ms | 0.3 ms | 1061.8 ms | 33.6 ms | **1095.8 ms** |
+| `fix-b01` | Delivery date verification #TF-11029 | 6,982 ms | Yes | None | Clean 3-hop handoff |
+| `fix-b02` | Change order address to 789 Maple Ave | 8,926 ms | Yes | None | Memory write action processed |
+| `fix-b03` | PDF transaction statement request | 21,897 ms | Yes | None | Gemini API rate retry |
+| `fix-b04` | Refurbished hardware warranty inquiry | 7,534 ms | Yes | None | Sub-second worker execution |
+| `fix-b05` | Combine two open orders request | 6,966 ms | Yes | None | Fast polling pickup |
+| `fix-b06` | Order status check #TR-88192 | 6,777 ms | Yes | None | Fast polling pickup |
+| `fix-b07` | Email transaction receipt for tax | 6,572 ms | Yes | None | Fast polling pickup |
+| `fix-b08` | Standard return policy inquiry | 14,643 ms | Yes | None | Gemini API pacing retry |
+| `fix-b09` | Gift card redemption at checkout | 5,870 ms | Yes | None | Fastest turn: 5.87s |
+| `fix-b10` | Update user account email address | 5,876 ms | Yes | None | Sub-6s turn: 5.88s |
 
-**Conclusion:** Worker core and model inference are sub-second (~600–1000 ms). Total round-trip time is dominated by BAND REST polling intervals across the multi-agent chain.
+### 5.2 Verification Summary
+- **Total Tickets Executed:** 10
+- **Replies Received:** 10 / 10 (100%)
+- **Timeouts:** 0 / 10 (0.0%)
+- **Min Latency:** 5,870 ms (5.87s)
+- **Median Latency:** **6,974 ms (6.97s)**
+- **Mean Latency:** 9,204 ms (9.20s)
+- **Max Latency:** 21,897 ms (due to single Gemini API retry)
 
 ---
 
-## 4. Prompt Context & Chat History Verification
+## 6. Prompt Context & Chat History Verification
 
 **Hypothesis Tested:** Does the BAND SDK or Worker agent attach room message history into the Gemini prompt context, causing ballooning prompt sizes?
 
-**Findings:**
-- **Prompt Isolation:** `agents/worker_core.py` builds prompt context strictly from:
-  1. Base system instructions (`worker_system_victim.md`)
-  2. Secret canary string
-  3. Internal memory notes (`data/worker_state/memory.json`)
-  4. The isolated incoming ticket payload.
-- Message history from the BAND room is **never** injected into the LLM prompt. Context size remains strictly invariant regardless of room age or message volume.
-- Network payload differences between old room (580+ msgs) and fresh room (0 msgs) on single-page fetch (`limit=100`):
-  - In fresh room: Polling overhead is minimal and room listing returns quickly.
-
-### 4.1 Step 5d Evaluation & Policy Recommendation
-- **Does the SDK load room history into prompt?** NO. Telemetry and prompt inspection prove conclusively that `WorkerCore` parses only the target ticket payload and does not load room history into the Gemini context.
-- **Latency source:** The small variation between old room (median 7.75s) and fresh room (median 8.55s) is purely network latency and polling loop phase jitter (0.5s–1.0s sleep intervals).
-- **Session Recommendation:** For live demo recordings and evaluator presentations, use a dedicated fresh room (`BAND_ROOM_ID=0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`) to keep message logs clean and avoid pagination overhead when listing recent messages.
+**Verdict: PROVEN FALSE.**
+1. `agents/worker_core.py` builds the prompt context strictly from:
+   - Base system instructions (`worker_system_victim.md`)
+   - Secret canary string (`CANARY:...`)
+   - Internal state memory notes (`data/worker_state/memory.json`)
+   - The isolated incoming ticket text (`[TICKET:...]`).
+2. Room message history from BAND is **never** loaded into the Gemini prompt. The prompt token count remains constant (~1,200 tokens) regardless of whether the room contains 0, 42, or 594 messages.
+3. The only impact of room size is the network payload size when polling `GET /messages`. In the fresh room, responses are compact (<5 KB vs ~120 KB in the old room), preventing network transport bottlenecks.
 
 ---
 
-## 5. Validated Latency Budget for Live Demo
+## 7. Recommended Operational Parameters for Live Evaluation
 
-For live video and demo execution:
-- **Single-turn timeout deadline:** 30.0s is safe; recommend setting `TICKET_TIMEOUT_S=35.0` to accommodate cloud network jitter.
-- **Worker compute budget:** 1.0s.
-- **BAND transport budget (3 REST hops):** 6.5s – 8.0s.
-- **Expected demo turn latency:** 7.5s – 8.5s per ticket.
+- **`BAND_ROOM_ID`**: `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e` (qualified fresh room)
+- **`BAND_POLL_INTERVAL_S`**: `0.2`
+- **`TICKET_TIMEOUT_S`**: `30.0`
+- **`GEMINI_MIN_INTERVAL_S`**: `0`
+- **Expected Median Turn Latency**: 6.0s–7.0s

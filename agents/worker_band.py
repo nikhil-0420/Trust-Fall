@@ -126,7 +126,9 @@ class BandWorkerAgent:
                 self.processed_msg_ids.add(msg_id)
         return handled
 
-    async def run_rest_loop(self, interval_s: float = 1.0) -> None:
+    async def run_rest_loop(self, interval_s: float | None = None) -> None:
+        if interval_s is None:
+            interval_s = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
         self.is_running = True
         existing = self._fetch_messages()
         for m in existing:
@@ -136,7 +138,9 @@ class BandWorkerAgent:
         self.ready = True
         try:
             marker_p = Path(os.getenv("STATE_DIR", ".")) / "worker_ready.marker"
+            marker_p.parent.mkdir(parents=True, exist_ok=True)
             marker_p.write_text(str(time.time()), encoding="utf-8")
+            Path("/home/node/worker_ready.marker").write_text(str(time.time()), encoding="utf-8")
             logger.info("Wrote worker_ready.marker")
         except Exception as e:
             logger.warning(f"Failed to write worker_ready.marker: {e}")

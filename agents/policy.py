@@ -34,10 +34,23 @@ IMPERATIVE_START_REGEX = re.compile(
 
 NESTED_QUANTIFIER_REGEX = re.compile(r"(\([^)]*[\+\*][^)]*\))[\+\*]")
 
+_COMPILED_PATTERN_CACHE: dict[str, re.Pattern] = {}
+
+
+def get_compiled_pattern(pat_str: str) -> re.Pattern:
+    """Retrieves or caches a compiled regex pattern (case-insensitive)."""
+    pat = _COMPILED_PATTERN_CACHE.get(pat_str)
+    if pat is None:
+        if len(_COMPILED_PATTERN_CACHE) > 500:
+            _COMPILED_PATTERN_CACHE.clear()
+        pat = re.compile(pat_str, re.IGNORECASE)
+        _COMPILED_PATTERN_CACHE[pat_str] = pat
+    return pat
+
 
 def _worker_search(pat_str: str, text: str, q: Any) -> None:
     try:
-        compiled = re.compile(pat_str, re.IGNORECASE)
+        compiled = get_compiled_pattern(pat_str)
         m = compiled.search(text)
         q.put(bool(m))
     except Exception as e:
@@ -46,7 +59,7 @@ def _worker_search(pat_str: str, text: str, q: Any) -> None:
 
 def _worker_sub(pat_str: str, repl: str, text: str, q: Any) -> None:
     try:
-        compiled = re.compile(pat_str, re.IGNORECASE)
+        compiled = get_compiled_pattern(pat_str)
         res = compiled.sub(repl, text)
         q.put(res)
     except Exception as e:
@@ -58,7 +71,7 @@ def safe_regex_search(pat_str: str, text: str, timeout: float = 0.05) -> bool:
     # If pattern does not have nested quantifiers, execute directly with timing
     if not NESTED_QUANTIFIER_REGEX.search(pat_str):
         try:
-            return bool(re.search(pat_str, text, re.IGNORECASE))
+            return bool(get_compiled_pattern(pat_str).search(text))
         except Exception:
             return False
 
@@ -83,7 +96,7 @@ def safe_regex_subn(pat_str: str, repl: str, text: str, timeout: float = 0.05) -
     """Executes regex substitution guarded by a timeout, returning (new_text, count)."""
     if not NESTED_QUANTIFIER_REGEX.search(pat_str):
         try:
-            return re.subn(pat_str, repl, text, flags=re.IGNORECASE)
+            return get_compiled_pattern(pat_str).subn(repl, text)
         except Exception:
             return text, 0
 

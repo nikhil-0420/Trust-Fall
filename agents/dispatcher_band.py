@@ -164,7 +164,9 @@ class BandDispatcherAgent:
         self._post_to_room(forward_msg, mentions=mentions)
         logger.info(f"[TIMELINE] Dispatcher forward posted ticket={env.ticket_id} at {time.time():.4f}")
 
-    async def run(self, interval_s: float = 1.0) -> None:
+    async def run(self, interval_s: float | None = None) -> None:
+        if interval_s is None:
+            interval_s = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
         self.is_running = True
         # Pre-seed existing messages so we do not reprocess old history
         existing = self._fetch_messages()

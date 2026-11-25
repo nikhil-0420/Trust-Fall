@@ -131,7 +131,8 @@ class BandTransport(Transport):
                     break
             if matched_report:
                 break
-            await asyncio.sleep(1.0)
+            poll_interval = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
+            await asyncio.sleep(poll_interval)
 
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 

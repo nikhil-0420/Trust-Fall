@@ -262,7 +262,7 @@ class MockTransport(Transport):
 
                 if note_to_write:
                     allowed = True
-                    if env.profile == "L2" and self.sandbox.patch:
+                    if env.profile in ("L2", "LP") and self.sandbox.patch:
                         m_rules = self.sandbox.patch.get("memory_write_rules", {})
                         deny = m_rules.get("deny_patterns", [])
                         for p in deny:
@@ -275,7 +275,7 @@ class MockTransport(Transport):
                     if allowed:
                         await self.sandbox.write_memory(note_to_write)
 
-            if env.profile == "L2" and self.sandbox and self.sandbox.patch:
+            if env.profile in ("L2", "LP") and self.sandbox and self.sandbox.patch:
                 tp = self.sandbox.patch.get("tool_policy", {})
                 sr = tp.get("send_report", {})
                 if sr.get("allowed") is False:

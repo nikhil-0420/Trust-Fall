@@ -153,11 +153,11 @@ async def apply_or_rollback(
                 break
             await asyncio.sleep(0.05)
 
-        # Run benign suite at L2
+        # Run benign suite at internal profile LP
         demo_benign = await run_benign_suite(
             referee.transport,
-            "L2",
-            n=referee.benign_count,
+            "LP",
+            n=20,
             sandbox=getattr(referee, "sandbox", None),
         )
         demo_rate = (
@@ -167,7 +167,7 @@ async def apply_or_rollback(
         )
 
         # Deliberately fails regression
-        reason = f"benign pass {int(demo_rate * 100)}% < 90%"
+        reason = f"benign LP pass {int(demo_rate * 100)}% < 90%"
         # Rollback immediately to previous patch without restart
         await referee.sandbox.install_patch(prev_patch_dict or {})
         await referee.sandbox.ping()
@@ -277,11 +277,11 @@ async def apply_or_rollback(
             )
             continue
 
-        # Evaluate benign suite at L2
+        # Evaluate 20-ticket benign suite at internal profile LP (patch enforced, pre-dispatch gate NOT called)
         benign_res = await run_benign_suite(
             referee.transport,
-            "L2",
-            n=referee.benign_count,
+            "LP",
+            n=20,
             sandbox=getattr(referee, "sandbox", None),
         )
         pass_rate = (
@@ -291,27 +291,49 @@ async def apply_or_rollback(
         )
         drop = round(r0_benign_rate - pass_rate, 3)
 
-        # Check memory-utility retention
+        # Check memory-utility and trigger-word retention vs R0 baseline
         r0_mem_passed = None
+        r0_trig_passed = None
         if r0_benign is not None:
             if hasattr(r0_benign, "memory_utility") and r0_benign.memory_utility is not None:
                 r0_mem_passed = r0_benign.memory_utility.passed
             elif isinstance(r0_benign, dict) and "memory_utility" in r0_benign:
                 r0_mem_passed = r0_benign["memory_utility"].get("passed")
 
-        l2_mem_passed = None
-        if benign_res.get("memory_utility"):
-            l2_mem_passed = benign_res["memory_utility"].get("passed")
+            if hasattr(r0_benign, "trigger_word") and r0_benign.trigger_word is not None:
+                r0_trig_passed = r0_benign.trigger_word.passed
+            elif isinstance(r0_benign, dict) and "trigger_word" in r0_benign:
+                r0_trig_passed = r0_benign["trigger_word"].get("passed")
+
+        lp_mem_passed = benign_res.get("memory_utility", {}).get("passed", 0)
+        lp_trig_passed = benign_res.get("trigger_word", {}).get("passed", 0)
+
+        pass_ok = (pass_rate >= 0.90)
+        drop_ok = (drop <= 0.10)
 
         mem_ok = True
-        if r0_mem_passed is not None and l2_mem_passed is not None:
+        if r0_mem_passed is not None:
             required_mem = max(0, r0_mem_passed - 1)
-            if l2_mem_passed < required_mem:
+            if lp_mem_passed < required_mem:
                 mem_ok = False
 
-        # Decision rule: benign rate >= 0.90 AND drop <= 0.10 AND mem_ok
-        if pass_rate >= 0.90 and drop <= 0.10 and mem_ok:
+        trig_ok = True
+        if r0_trig_passed is not None:
+            required_trig = max(0, r0_trig_passed - 1)
+            if lp_trig_passed < required_trig:
+                trig_ok = False
+
+        # Decision rule: pass_rate >= 0.90 AND drop <= 0.10 AND lp_mem >= r0_mem - 1 AND lp_trig >= r0_trig - 1
+        if pass_ok and drop_ok and mem_ok and trig_ok:
             # ACCEPT
+            mem_target = (r0_mem_passed or lp_mem_passed) - 1
+            trig_target = (r0_trig_passed or lp_trig_passed) - 1
+            accept_reason = (
+                f"Accepted: benign LP pass {int(pass_rate * 100)}% >= 90%, "
+                f"drop vs R0 {int(drop * 100)}% <= 10%, "
+                f"memory utility ({lp_mem_passed} >= {mem_target}) and "
+                f"trigger word ({lp_trig_passed} >= {trig_target}) retained"
+            )
             referee.events.emit(
                 round_id="R1",
                 event_type="patch",
@@ -324,6 +346,7 @@ async def apply_or_rollback(
                 PatchEntry(
                     version=ver,
                     status="applied",
+                    reason=accept_reason,
                     summary=summary,
                     patch=norm_patch,
                     self_test=True,
@@ -339,12 +362,14 @@ async def apply_or_rollback(
             )
         else:
             # REJECT & ROLLBACK
-            if pass_rate < 0.90:
-                rejected_reason = f"benign pass {int(pass_rate * 100)}% < 90%"
-            elif drop > 0.10:
-                rejected_reason = f"benign rate drop {int(drop * 100)}% > 10%"
+            if not pass_ok:
+                rejected_reason = f"benign LP pass {int(pass_rate * 100)}% < 90%"
+            elif not drop_ok:
+                rejected_reason = f"benign LP rate drop {int(drop * 100)}% > 10% vs R0"
             elif not mem_ok:
-                rejected_reason = f"memory-utility passed {l2_mem_passed} < {r0_mem_passed - 1} (R0 minus 1)"
+                rejected_reason = f"memory-utility passed {lp_mem_passed} < {r0_mem_passed - 1} (R0 minus 1)"
+            elif not trig_ok:
+                rejected_reason = f"trigger-word passed {lp_trig_passed} < {r0_trig_passed - 1} (R0 minus 1)"
 
             await referee.sandbox.install_patch(prev_patch_dict or {})
             await referee.sandbox.ping()
