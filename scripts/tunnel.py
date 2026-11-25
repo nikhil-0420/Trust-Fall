@@ -58,16 +58,17 @@ def main():
     port = os.getenv("PORT", "8000")
     print(f"[*] Starting Trust Fall API on port {port}...")
 
+    api_log = open("data/api.log", "w", encoding="utf-8")
     api_proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "api.main:app", "--port", str(port)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        [sys.executable, "-m", "uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", str(port)],
+        stdout=api_log,
+        stderr=subprocess.STDOUT,
     )
 
     time.sleep(1.5)
 
     print("[*] Launching Cloudflare Tunnel...")
-    tunnel_cmd = [cloudflared_path, "tunnel", "--url", f"http://localhost:{port}"]
+    tunnel_cmd = [cloudflared_path, "tunnel", "--url", f"http://127.0.0.1:{port}"]
 
     try:
         tunnel_proc = subprocess.Popen(

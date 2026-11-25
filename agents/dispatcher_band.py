@@ -168,8 +168,8 @@ class BandDispatcherAgent:
         if interval_s is None:
             interval_s = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
         self.is_running = True
-        # Pre-seed existing messages so we do not reprocess old history
-        existing = self._fetch_messages()
+        # Pre-seed existing messages so startup does not replay historical tickets
+        existing = self._fetch_messages(max_pages=3)
         for m in existing:
             m_id = getattr(m, "id", None)
             if m_id:

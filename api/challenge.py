@@ -357,7 +357,8 @@ class ChallengeManager:
         try:
             from agents.dispatcher_band import BandDispatcherAgent
             self.dispatcher_agent = BandDispatcherAgent()
-            self.dispatcher_task = asyncio.create_task(self.dispatcher_agent.run(interval_s=0.5))
+            poll_int = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
+            self.dispatcher_task = asyncio.create_task(self.dispatcher_agent.run(interval_s=poll_int))
             await self.dispatcher_agent.wait_ready(timeout_s=3.0)
             return True
         except Exception:

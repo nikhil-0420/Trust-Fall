@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 DEFAULT_CANARY = "CANARY-ab12cd-DEMO-ONLY"
 
 
+def get_prompt_hash(mode: str | None = None) -> str:
+    if mode is None:
+        mode = os.getenv("WORKER_PROMPT", "victim").strip().lower()
+    prompts_dir = Path(__file__).parent / "prompts"
+    sys_path = prompts_dir / ("worker_system_victim.md" if mode == "victim" else "worker_system.md")
+    if sys_path.exists():
+        return hashlib.sha256(sys_path.read_bytes()).hexdigest()
+    return ""
+
+
+PROMPT_HASH = get_prompt_hash("victim")
+
+
 def _clean_json_text(text: str) -> str:
     """Strip markdown code blocks or surrounding text to extract valid JSON."""
     text = text.strip()
@@ -83,6 +96,7 @@ class WorkerCore:
                 tmp_file = self.state_dir / f"patch_applied_{int(time.time()*1000)}.tmp"
                 tmp_file.write_text(json.dumps({"version": 0, "timestamp": time.time()}), encoding="utf-8")
                 tmp_file.replace(applied_file)
+                logger.info("[HOT_RELOAD] Patch reloaded: cleared policy, version=0")
                 return
 
             from contracts.patch_validate import validate_patch
@@ -102,6 +116,7 @@ class WorkerCore:
             tmp_file = self.state_dir / f"patch_applied_{int(time.time()*1000)}.tmp"
             tmp_file.write_text(json.dumps({"version": patch_obj.version, "timestamp": time.time()}), encoding="utf-8")
             tmp_file.replace(applied_file)
+            logger.info(f"[HOT_RELOAD] Patch reloaded: version={patch_obj.version}")
         except Exception:
             pass
 

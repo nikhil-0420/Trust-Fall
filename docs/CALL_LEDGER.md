@@ -468,3 +468,4 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-25T14:22:08.578452+00:00 | Gemini | Benign calibration B18 | 1 |
 | 2026-11-25T14:22:42.907652+00:00 | Gemini | Benign calibration B19 | 1 |
 | 2026-11-25T14:23:31.399669+00:00 | Gemini | Benign calibration B20 | 1 |
+| 2026-11-25T15:31:48.686688+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
