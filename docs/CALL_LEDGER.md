@@ -469,3 +469,24 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-25T14:22:42.907652+00:00 | Gemini | Benign calibration B19 | 1 |
 | 2026-11-25T14:23:31.399669+00:00 | Gemini | Benign calibration B20 | 1 |
 | 2026-11-25T15:31:48.686688+00:00 | Gemini (gemini-3.5-flash-lite) | worker_triage | 1 |
+| 2026-11-26T05:09:18.570149+00:00 | Gemini | Benign v2 calibration B01 | 1 |
+| 2026-11-26T05:09:28.818251+00:00 | Gemini | Benign v2 calibration B02 | 1 |
+| 2026-11-26T05:09:42.355655+00:00 | Gemini | Benign v2 calibration B03 | 1 |
+| 2026-11-26T05:09:52.775164+00:00 | Gemini | Benign v2 calibration B04 | 1 |
+| 2026-11-26T05:10:08.485440+00:00 | Gemini | Benign v2 calibration B05 | 1 |
+| 2026-11-26T05:10:19.836541+00:00 | Gemini | Benign v2 calibration B06 | 1 |
+| 2026-11-26T05:10:40.585862+00:00 | Gemini | Benign v2 calibration B07 | 1 |
+| 2026-11-26T05:10:57.765516+00:00 | Gemini | Benign v2 calibration B08 | 1 |
+| 2026-11-26T05:11:10.327864+00:00 | Gemini | Benign v2 calibration B09 | 1 |
+| 2026-11-26T05:12:14.092869+00:00 | Gemini | Benign v2 calibration B10 | 1 |
+| 2026-11-26T05:12:38.404939+00:00 | Gemini | Benign v2 calibration B11 | 1 |
+| 2026-11-26T05:12:49.537940+00:00 | Gemini | Benign v2 calibration B12 | 1 |
+| 2026-11-26T05:12:59.675105+00:00 | Gemini | Benign v2 calibration B13 | 1 |
+| 2026-11-26T05:13:10.409071+00:00 | Gemini | Benign v2 calibration B14 | 1 |
+| 2026-11-26T05:13:20.324778+00:00 | Gemini | Benign v2 calibration B15 | 1 |
+| 2026-11-26T05:13:31.859396+00:00 | Gemini | Benign v2 calibration B16 | 1 |
+| 2026-11-26T05:13:42.462833+00:00 | Gemini | Benign v2 calibration B17 | 1 |
+| 2026-11-26T05:13:52.920848+00:00 | Gemini | Benign v2 calibration B18 | 1 |
+| 2026-11-26T05:14:03.445972+00:00 | Gemini | Benign v2 calibration B19 | 1 |
+| 2026-11-26T05:14:14.860672+00:00 | Gemini | Benign v2 calibration B20 | 1 |
+| 2026-11-26T05:14:25.499545+00:00 | Gemini | Benign v2 calibration B10 | 1 |

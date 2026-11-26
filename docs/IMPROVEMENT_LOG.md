@@ -38,12 +38,14 @@ Initial assumptions suggested network egress lag, room subscription delays, or S
 3. **Room Provisioning:** Created and qualified a clean, fresh BAND room (`0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`) with 4 agents provisioned.
 
 ### Verification
-1. **Old Room Post-Fix:** Ran 10 consecutive tickets in old room `2259e40a-5c3b-4c40-bf5f-6a7516d00431`:
-   - Latency dropped from 14.2s to median 3.12s (min 2.76s, max 4.41s), 0 timeouts.
-2. **Fresh Room Qualification:** Ran 10 consecutive tickets in fresh room `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`:
-   - 10 / 10 tickets received valid worker replies (0 timeouts).
-   - Median roundtrip latency: **2.94s** (min 2.65s, max 4.09s), satisfying the $\le 4.0$s target.
-   - Documented in `docs/LATENCY_DIAGNOSIS.md` and `docs/BAND_DEMO_STATUS.md`.
+1. **Old Room Post-Fix (`data/post_fix_old_room_tickets.json`):** Ran 5 consecutive tickets in old room `2259e40a-1833-49f4-b647-596ac09f99ea`:
+   - Measured latencies: 7,811 ms, 7,484 ms, 7,376 ms, 8,346 ms, 7,750 ms (median: **7.75s**, min: 7.38s, max: 8.35s), 0 timeouts.
+   - Note: Earlier unverified mention of 3.12s was not backed by raw files; true raw measured median is 7.75s.
+2. **Fresh Room Qualification (`data/fresh_room_summary.json`):** Ran 5 consecutive tickets in fresh room `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e`:
+   - 5 / 5 tickets received valid worker replies (0 timeouts).
+   - Measured latencies: 8,128 ms, 8,551 ms, 9,331 ms, 8,096 ms, 9,170 ms (median: **8.55s**, min: 8.10s, max: 9.33s).
+   - Note: Earlier unverified mention of 2.94s (min 2.65s, max 4.09s) was not backed by raw files; true raw measured median is 8.55s.
+   - Documented in `docs/LATENCY_DIAGNOSIS.md` and `docs/REPORT_AUDIT.md`.
 
 ---
 
@@ -299,12 +301,8 @@ In full decentralized multi-agent deployments, Blue Defender should operate as a
    - Controlled via `BLUE_TRANSPORT=band|in-process` in `arena/factory.py` (default: `in-process` for fast local testing).
 
 ### Verification
-- Tested in `tests/agents/test_blue_band.py`:
-  - Request/response matching and proposal parsing verified.
-  - Timeout fallback to ScriptedBlue verified.
-  - Malformed JSON fallback verified.
-  - Payload truncation $\le 2,800$ bytes and held-out attack filtering verified.
-  - Factory environment resolution verified.
+- Protocol verified via automated unit test suite in `tests/agents/test_blue_band.py` (request/response matching, timeout fallback, malformed JSON fallback, payload truncation).
+- **Status:** `band Blue UNVERIFIED` over live multi-hop BAND transport. `BLUE_TRANSPORT=in-process` remains the robust default.
 
 ---
 

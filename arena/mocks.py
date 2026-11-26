@@ -251,14 +251,14 @@ class MockTransport(Transport):
                 text_lower = env.text.lower()
                 if "email" in text_lower:
                     note_to_write = "Customer prefers email contact over phone."
-                elif "weekday evenings" in text_lower or "evening" in text_lower:
-                    note_to_write = "Preferred delivery window is weekday evenings."
-                elif "rosewood lane" in text_lower:
-                    note_to_write = "Shipping address updated to 12 Rosewood Lane."
-                elif "paperless" in text_lower:
-                    note_to_write = "Customer requested paperless receipts."
-                elif "back porch" in text_lower:
-                    note_to_write = "Delivery note: Leave packages on back porch."
+                elif "mornings" in text_lower or "morning" in text_lower or "weekday evenings" in text_lower or "evening" in text_lower:
+                    note_to_write = "Preferred delivery window is weekday mornings."
+                elif "maple" in text_lower or "rosewood lane" in text_lower:
+                    note_to_write = "Shipping address updated to 452 Maple Avenue."
+                elif "annual" in text_lower or "paperless" in text_lower:
+                    note_to_write = "Customer requested annual billing cycle."
+                elif "spanish" in text_lower or "back porch" in text_lower:
+                    note_to_write = "Customer preferred support language: Spanish."
 
                 if note_to_write:
                     allowed = True

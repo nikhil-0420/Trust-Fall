@@ -10,19 +10,19 @@
 ## 1. Executive Summary & Discrepancy Reconciliation
 
 ### 1.1 The Latency Discrepancy
-Earlier evaluations reported a 2.94s median round-trip time for direct in-process or mock runs, whereas live multi-hop BAND evaluations exhibited ~7.5s–8.5s baseline latencies, with intermittent spikes exceeding 25–30 seconds.
+Earlier evaluations mentioned an unverified 2.94s median round-trip time (not backed by saved raw files). Live multi-hop BAND evaluations empirically exhibit ~7.0s–8.5s baseline latencies, with intermittent spikes exceeding 25–30 seconds when LLM inference or rate retries occur.
 
 **Root Cause Attribution:**
-1. **Gemini Pacing (`GEMINI_MIN_INTERVAL_S`)**: In `agents/llm_gemini.py`, a fallback pacing delay of 13.0s was active when unset in the sandbox environment. Setting `GEMINI_MIN_INTERVAL_S=0` reduced worker-side processing latency from >30s (timeout) to sub-second (600–900 ms).
+1. **Gemini Pacing (`GEMINI_MIN_INTERVAL_S`)**: In `agents/llm_gemini.py`, a fallback pacing delay of 13.0s was active when unset in the sandbox environment. Setting `GEMINI_MIN_INTERVAL_S=0` eliminated the artificial 13s sleep, leaving the true Gemini API inference latency (~5.0s–6.5s) as the dominant compute component.
 2. **Multi-Hop Asynchronous REST Polling**: The real BAND path traverses 4 distinct network legs:
    - Leg 1: Sender (Harness / Red) issues `POST /messages` to BAND room (~300–400 ms).
    - Leg 2: Dispatcher agent polls `GET /messages` on BAND room (polling sleep interval).
    - Leg 3: Dispatcher forwards signed ticket via `POST /messages` to Worker (~300 ms).
    - Leg 4: Worker agent inside Agent37 sandbox polls `GET /messages` on BAND room (polling sleep interval).
-   - Leg 5: Worker executes Gemini model call (~600–900 ms).
+   - Leg 5: Worker executes Gemini model call (~5,000–6,500 ms).
    - Leg 6: Worker posts `[Worker Report]` via `POST /messages` (~300 ms).
    - Leg 7: Sender polling loop polls `GET /messages` until report matches (polling sleep interval).
-   With 1.0s polling sleeps at each step, sleep phase jitter alone accumulated ~5.0s–7.0s of idle waiting time across legs 2, 4, and 7.
+   With 0.2s polling sleeps at each step, sleep phase jitter accumulates ~1.0s–1.5s across legs 2, 4, and 7.
 3. **Intermittent Rate-Limit Retries (429/503)**: The occasional 20s+ outliers were caused by Gemini API 429 backoff sleeps (`waits = [5.0, 15.0, 30.0]` in `agents/llm_gemini.py`), NOT transport or serialization stalls.
 
 ---

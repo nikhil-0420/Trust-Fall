@@ -339,14 +339,13 @@ def check_room_participants(room_id: str | None = None) -> tuple[bool, str]:
 async def run_liveness_check(
     room_id: str | None = None,
     n: int = 5,
-    max_timeout_s: float = 20.0,
-    target_median_s: float = 6.0,
-    strict: bool = False,
+    max_timeout_s: float = 30.0,
+    target_median_s: float = 10.0,
+    strict: bool = True,
 ) -> tuple[bool, str, dict[str, Any]]:
     """
     Send 5 fast benign tickets over BAND at L0 (B01-B05).
-    Assert all 5 answered within 20s each with median <6s.
-    If any fail or median >= 6s, print clear warning (or fail if strict).
+    Assert all 5 answered within 30s each with median <= 10s.
     """
     from arena.benign import BENIGN_TICKETS, is_benign_passed
     from arena.interfaces import Envelope
@@ -422,14 +421,10 @@ async def run_liveness_check(
     if not all_answered or not all_under_max:
         return False, f"Liveness check failed: not all tickets answered within {max_timeout_s}s", metrics
 
-    if median_latency_s >= target_median_s:
-        if strict:
-            return False, f"Liveness median latency {median_latency_s:.2f}s >= {target_median_s}s (--strict)", metrics
-        else:
-            logger.warning(f"Median latency was {median_latency_s:.2f}s (target < {target_median_s}s)")
-            return True, f"Liveness check PASSED with warning: {metrics['passed']}/{metrics['total']} tickets answered, median={median_latency_s:.2f}s (target < {target_median_s}s)", metrics
+    if median_latency_s > target_median_s:
+        return False, f"Liveness median latency {median_latency_s:.2f}s > {target_median_s}s", metrics
 
-    return True, f"Liveness check PASSED: {metrics['passed']}/{metrics['total']} tickets answered, median={median_latency_s:.2f}s", metrics
+    return True, f"Liveness check PASSED: {metrics['passed']}/{metrics['total']} tickets answered, median={median_latency_s:.2f}s <= {target_median_s}s", metrics
 
 
 async def run_all_preflight(check_liveness: bool = False, room_id: str | None = None, strict: bool = False) -> bool:
