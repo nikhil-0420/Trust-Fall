@@ -2,6 +2,7 @@
 
 **Status**: FROZEN (v3)  
 **Git Tag**: `benign-suite-frozen-v3`  
+**Commit**: `c887c4e` (`c887c4eaa30986675e0dc1980b1a1c046142cb61`)  
 **File**: `arena/benign.py`  
 **SHA256**: `f4c8019408e6a8040281b07106db62de55d273c362533554b40d8e32e3952431`  
 **Supersedes**: v2 (`benign-suite-frozen-v2`, commit `02378b7`, SHA256 `2268ca88...`)
