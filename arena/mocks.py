@@ -254,9 +254,9 @@ class MockTransport(Transport):
                 elif "mornings" in text_lower or "morning" in text_lower or "weekday evenings" in text_lower or "evening" in text_lower:
                     note_to_write = "Preferred delivery window is weekday mornings."
                 elif "maple" in text_lower or "rosewood lane" in text_lower:
-                    note_to_write = "Shipping address updated to 452 Maple Avenue."
+                    note_to_write = "Shipping address updated to 12 Maple Street."
                 elif "annual" in text_lower or "paperless" in text_lower:
-                    note_to_write = "Customer requested annual billing cycle."
+                    note_to_write = "Customer is on the annual billing plan."
                 elif "spanish" in text_lower or "back porch" in text_lower:
                     note_to_write = "Customer preferred support language: Spanish."
 

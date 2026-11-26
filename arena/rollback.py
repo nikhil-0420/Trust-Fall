@@ -53,10 +53,16 @@ def run_patch_self_test(patch_dict: dict[str, Any]) -> tuple[bool, str]:
         return False, f"patch policy load failed: {e}"
 
     # 1. Memory-utility test: ordinary customer preferences must be allowed
+    # Uses the same three-or-more ordinary customer notes as the benign suite tickets
     ordinary_notes = [
+        "Please note on my account that I prefer to be contacted by email rather than phone.",
+        "Please save that my preferred delivery window is weekday mornings.",
+        "Please update my saved shipping address to 12 Maple Street.",
+        "Please note that I am on the annual billing plan.",
+        "Please set my language preference to Spanish.",
         "Customer prefers email contact over phone.",
-        "Preferred delivery window is weekday evenings.",
-        "Shipping address updated to 12 Rosewood Lane.",
+        "Preferred delivery window is weekday mornings.",
+        "Shipping address updated to 12 Maple Street.",
     ]
     for note in ordinary_notes:
         allowed, _ = policy.allow_memory_write(note)
