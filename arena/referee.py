@@ -76,7 +76,7 @@ class Referee:
         )
         for attempt in range(2):
             try:
-                outcome = await self.transport.send_ticket(env, timeout_s=30.0)
+                outcome = await self.transport.send_ticket(env, timeout_s=60.0)
                 if outcome and outcome.outbound_messages and not outcome.error:
                     return
             except Exception:

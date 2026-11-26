@@ -96,43 +96,56 @@ class BandTransport(Transport):
 
         return messages
 
-    async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
+    async def send_ticket(self, env: Envelope, timeout_s: float = 60.0) -> WorkerOutcome:
         env_timeout = os.getenv("TICKET_TIMEOUT_S")
         if env_timeout:
             try:
                 timeout_s = float(env_timeout)
             except ValueError:
                 pass
+
+        # Multi-step tickets get 90s timeout
+        if getattr(env, "is_multistep", False) or "multi" in getattr(env, "ticket_id", "").lower():
+            timeout_s = max(timeout_s, 90.0)
+
         start_time = time.perf_counter()
-
-        # Snapshot existing message IDs before sending so we never match stale history
-        existing_msgs = self._fetch_room_messages()
-        seen_ids = {getattr(m, "id", None) for m in existing_msgs if getattr(m, "id", None)}
-
-        # Format ticket content mentioning Dispatcher
-        payload_text = json.dumps(env.model_dump())
-        post_content = f"@{self.dispatcher_handle} [TICKET:{env.ticket_id}] {payload_text}"
-
-        self._post_message(post_content)
-
-        # Poll room messages every 1 second until timeout
-        deadline = time.time() + timeout_s
         matched_report = None
 
-        while time.time() < deadline:
-            messages = self._fetch_room_messages()
-            for m in messages:
-                m_id = getattr(m, "id", None)
-                if m_id in seen_ids:
-                    continue
-                content = getattr(m, "content", "")
-                if env.ticket_id in content and ("[Worker Report]" in content or "Report" in content):
-                    matched_report = content
+        # 1 retry on timeout (2 attempts total)
+        for attempt in range(2):
+            # Snapshot existing message IDs before sending so we never match stale history
+            existing_msgs = self._fetch_room_messages()
+            seen_ids = {getattr(m, "id", None) for m in existing_msgs if getattr(m, "id", None)}
+
+            # Format ticket content mentioning Dispatcher
+            payload_text = json.dumps(env.model_dump())
+            post_content = f"@{self.dispatcher_handle} [TICKET:{env.ticket_id}] {payload_text}"
+
+            self._post_message(post_content)
+
+            # Poll room messages until deadline
+            deadline = time.time() + timeout_s
+
+            while time.time() < deadline:
+                messages = self._fetch_room_messages()
+                for m in messages:
+                    m_id = getattr(m, "id", None)
+                    if m_id in seen_ids:
+                        continue
+                    content = getattr(m, "content", "")
+                    if env.ticket_id in content and ("[Worker Report]" in content or "Report" in content):
+                        matched_report = content
+                        break
+                if matched_report:
                     break
+                poll_interval = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
+                await asyncio.sleep(poll_interval)
+
             if matched_report:
                 break
-            poll_interval = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
-            await asyncio.sleep(poll_interval)
+            if attempt == 0:
+                logger.warning(f"BandTransport: ticket {env.ticket_id} timed out after {timeout_s}s, retrying once...")
+                await asyncio.sleep(1.0)
 
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 

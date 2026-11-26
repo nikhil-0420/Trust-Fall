@@ -238,7 +238,7 @@ class MockTransport(Transport):
         self.sandbox = sandbox or FakeSandbox()
         self.gate = gate or MockGate()
 
-    async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
+    async def send_ticket(self, env: Envelope, timeout_s: float = 60.0) -> WorkerOutcome:
         start_t = time.perf_counter()
 
         if env.kind == "benign":

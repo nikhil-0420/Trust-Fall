@@ -3,6 +3,7 @@ Owner: Nikhil (Phase N3)
 LoopbackTransport implementing the Transport protocol.
 Runs fully in-process with Dispatcher, WorkerCore, and local state dir.
 """
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -56,9 +57,48 @@ class LoopbackTransport(Transport):
             except Exception:
                 pass
 
-    async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
-        """Sends an envelope through the Dispatcher and returns the WorkerOutcome."""
-        outcome = await self.dispatcher.handle_ticket(env)
-        if outcome.path is None:
-            outcome.path = "in-process"
+    async def send_ticket(self, env: Envelope, timeout_s: float = 60.0) -> WorkerOutcome:
+        """Sends an envelope through the Dispatcher and returns the WorkerOutcome with 1 retry on timeout."""
+        import asyncio
+        env_timeout = os.getenv("TICKET_TIMEOUT_S")
+        if env_timeout:
+            try:
+                timeout_s = float(env_timeout)
+            except ValueError:
+                pass
+
+        if getattr(env, "is_multistep", False) or "multi" in getattr(env, "ticket_id", "").lower():
+            timeout_s = max(timeout_s, 90.0)
+
+        for attempt in range(2):
+            try:
+                outcome = await asyncio.wait_for(self.dispatcher.handle_ticket(env), timeout=timeout_s)
+                if outcome.path is None:
+                    outcome.path = "in-process"
+                if not outcome.error:
+                    return outcome
+            except asyncio.TimeoutError:
+                if attempt == 1:
+                    return WorkerOutcome(
+                        ticket_id=env.ticket_id,
+                        outbound_messages=[],
+                        blocked_by_gate=False,
+                        latency_ms=int(timeout_s * 1000),
+                        llm_calls=0,
+                        error="timeout",
+                        path="in-process",
+                    )
+                await asyncio.sleep(0.5)
+            except Exception as e:
+                if attempt == 1:
+                    return WorkerOutcome(
+                        ticket_id=env.ticket_id,
+                        outbound_messages=[],
+                        blocked_by_gate=False,
+                        latency_ms=0,
+                        llm_calls=0,
+                        error=str(e),
+                        path="in-process",
+                    )
+                await asyncio.sleep(0.5)
         return outcome

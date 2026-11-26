@@ -26,7 +26,7 @@ python scripts/preflight.py --liveness
 | **e** | **Clear Lingering Patch** | Writes `{"version": 0}` to `/home/node/data/worker_state/patch.json` and verifies hot-reload in `worker.log` / `patch_applied.json`. | Active policy cleared (`version=0`), hot reload verified without microVM reboot. |
 | **f** | **Reset Memory & Canary** | Resets memory to `data/memory.json` (`{"notes": []}`), resets secrets to `tests/canary_secrets.txt` (`CANARY-ab12cd-DEMO-ONLY`), and clears ledger. | Clean memory verified via `sb.read_memory()`. |
 | **g** | **Room Participants** | Queries BAND REST API for chat participants in configured room. | Dispatcher (`Agent A`), Worker (`Agent B`), `Red Agent`, and `Blue Agent` are all active participants. |
-| **h** | **Benign Liveness Check** (`--liveness`) | Dispatches 5 fast benign tickets (B01, B02, B03, B04, B05) sequentially over BAND at profile L0 with background `BandDispatcherAgent` routing. | 5/5 tickets answered within 20.0s; reports warning if median $\ge 6.0$s (or fails if `--strict` passed). |
+| **h** | **Benign Liveness Check** (`--liveness`) | Dispatches 5 fast benign tickets (B01, B02, B03, B04, B05) sequentially over BAND at profile L0 with background `BandDispatcherAgent` routing. | **Enforced Rule in Code**: 5/5 tickets answered within $\le 30.0$s each; median latency $\le 10.0$s (replaces old 6.0s target based on empirical multi-hop BAND latency). |
 
 ---
 
@@ -41,7 +41,7 @@ options:
   -h, --help         show this help message and exit
   --liveness         Run 5-ticket benign liveness check
   --room-id ROOM_ID  Target BAND room ID (defaults to BAND_ROOM_ID from .env)
-  --strict           Fail if liveness median >= 6s
+  --strict           Fail if any ticket > 30s or median > 10s
 ```
 
 ---

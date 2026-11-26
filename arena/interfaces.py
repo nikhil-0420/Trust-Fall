@@ -54,7 +54,7 @@ class WorkerOutcome(BaseModel):
 
 @runtime_checkable
 class Transport(Protocol):
-    async def send_ticket(self, env: Envelope, timeout_s: float = 45.0) -> WorkerOutcome:
+    async def send_ticket(self, env: Envelope, timeout_s: float = 60.0) -> WorkerOutcome:
         ...
 
 

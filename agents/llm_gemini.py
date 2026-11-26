@@ -91,8 +91,15 @@ class GeminiLLM(LLM):
             GeminiLLM._last_call_time = time.time()
 
     def _extract_retry_delay(self, error_str: str, default_wait: float) -> float:
-        # Strictly enforce specified retry delays (5s, 15s, 30s) per AGENT_RULES
-        return default_wait
+        # Check if error message provides a retry-after duration, and cap sleep at 20s
+        m = re.search(r"retry[- ]after[:\s]+(\d+(?:\.\d+)?)", error_str, re.IGNORECASE)
+        if m:
+            try:
+                val = float(m.group(1))
+                return min(20.0, max(1.0, val))
+            except Exception:
+                pass
+        return min(20.0, default_wait)
 
     async def switch_to_fallback_model(self, error: Exception) -> str:
         """Switch to fallback Flash model when primary exhausts limits."""
@@ -175,16 +182,19 @@ class GeminiLLM(LLM):
             response_mime_type="application/json" if json_mode else None,
         )
 
-        waits = [5.0, 15.0, 30.0]
+        waits = [5.0, 15.0, 20.0]  # Capped at 20s max
         last_error = None
         for attempt in range(3):
             try:
                 await self._rate_limit_wait()
                 self.call_count += 1
-                resp = await self.client.aio.models.generate_content(
-                    model=self.model_name,
-                    contents=prompt,
-                    config=config,
+                resp = await asyncio.wait_for(
+                    self.client.aio.models.generate_content(
+                        model=self.model_name,
+                        contents=prompt,
+                        config=config,
+                    ),
+                    timeout=45.0,
                 )
                 self._log_call(purpose)
                 text = resp.text or ""
@@ -202,26 +212,41 @@ class GeminiLLM(LLM):
                 except Exception:
                     pass
                 return text
+            except asyncio.TimeoutError as e:
+                last_error = e
+                self._log_call(f"gemini_timeout_45s_attempt_{attempt+1}")
+                logger.warning(f"[GEMINI_TIMEOUT] Gemini call hung >45s on attempt {attempt+1}/3; abandoned.")
+                sleep_time = min(20.0, waits[attempt])
+                await asyncio.sleep(sleep_time)
+                continue
             except Exception as e:
                 last_error = e
                 err_str = str(e).lower()
                 if any(x in err_str for x in ["429", "503", "unavailable", "resource_exhausted", "quota"]):
-                    sleep_time = self._extract_retry_delay(err_str, waits[attempt])
+                    sleep_time = min(20.0, self._extract_retry_delay(err_str, waits[attempt]))
+                    self._log_call(f"429_backoff_{sleep_time:.1f}s")
+                    logger.warning(
+                        f"[GEMINI_RATE_LIMIT] 429/503 on attempt {attempt+1}/3: {err_str[:120]}. "
+                        f"Sleeping for {sleep_time:.1f}s (capped at 20s)"
+                    )
                     await asyncio.sleep(sleep_time)
                     continue
                 raise e
 
         # If retries on primary model failed with quota/availability, switch model
         err_str = str(last_error).lower()
-        if any(x in err_str for x in ["429", "503", "unavailable", "resource_exhausted", "quota"]):
+        if any(x in err_str for x in ["429", "503", "unavailable", "resource_exhausted", "quota"]) or isinstance(last_error, asyncio.TimeoutError):
             await self.switch_to_fallback_model(last_error)
             for fb_attempt in range(3):
                 try:
                     await self._rate_limit_wait()
-                    resp = await self.client.aio.models.generate_content(
-                        model=self.model_name,
-                        contents=prompt,
-                        config=config,
+                    resp = await asyncio.wait_for(
+                        self.client.aio.models.generate_content(
+                            model=self.model_name,
+                            contents=prompt,
+                            config=config,
+                        ),
+                        timeout=45.0,
                     )
                     self._log_call(f"{purpose}_fallback")
                     text = resp.text or ""

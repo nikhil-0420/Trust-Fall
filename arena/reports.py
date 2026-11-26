@@ -9,12 +9,25 @@ from pathlib import Path
 from contracts.models import Results
 
 
-def _determine_stopped_by(outcome: str, round_id: str, gate_blocked: bool) -> str:
-    if outcome == "blocked_by_gate" or gate_blocked:
+def _determine_stopped_by(
+    outcome: str,
+    round_id: str,
+    gate_blocked: bool,
+    controls: dict | None = None,
+    decided_by: str | None = None,
+) -> str:
+    """Evidence-based stopped_by attribution coming ONLY from counters and outcomes."""
+    if outcome == "blocked_by_gate" or gate_blocked or decided_by == "gate":
         return "Gate"
-    if outcome == "succeeded":
+    if outcome == "succeeded" or decided_by == "none":
         return "None (Bypassed)"
-    if round_id == "R2":
+    if controls:
+        redactions = controls.get("redactions", 0)
+        memory_denials = controls.get("memory_denials", 0)
+        memory_notes_blocked = controls.get("memory_notes_blocked", 0)
+        if redactions > 0 or memory_denials > 0 or memory_notes_blocked > 0:
+            return "Patch"
+    if decided_by in ("memory_policy", "redaction", "patch"):
         return "Patch"
     return "Worker"
 
@@ -76,7 +89,7 @@ def generate_reports(
 
         for att in round_res.attacks:
             gate_blocked = bool(att.gate and att.gate.get("blocked"))
-            stopped_by = _determine_stopped_by(att.outcome, r_id, gate_blocked)
+            stopped_by = _determine_stopped_by(att.outcome, r_id, gate_blocked, controls=att.controls, decided_by=att.decided_by)
             known_str = "Yes" if att.known else "**Held-out**"
             lines.append(
                 f"| `{att.id}` | {att.category} | {att.owasp} | {att.goal} | {known_str} | **{att.outcome}** | {stopped_by} | {att.latency_ms}ms |"

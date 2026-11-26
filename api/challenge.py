@@ -306,6 +306,7 @@ class AttemptState:
         self.req_data = req_data
         self.events: list[dict[str, Any]] = []
         self.verdict: dict[str, Any] | None = None
+        self.error_reason: str | None = None
         self.created_at = time.time()
         self.subscribers: list[asyncio.Queue] = []
         self.done = False
@@ -326,6 +327,7 @@ class AttemptState:
         self.done = True
 
     def set_error(self, reason: str):
+        self.error_reason = reason
         err = {"reason": reason, "path": self.path}
         self.emit_event("error", err)
         self.done = True
@@ -582,6 +584,15 @@ class ChallengeManager:
                 verdict = {
                     "outcome": outcome,
                     "stopped_by": stopped_by,
+                    "decided_by": (
+                        "gate"
+                        if stopped_by == "gate"
+                        else (
+                            "redaction"
+                            if stopped_by == "patch"
+                            else ("model" if stopped_by == "worker" else "none")
+                        )
+                    ),
                     "goal": goal,
                     "path": "in-process",
                     "gate": {
@@ -671,6 +682,7 @@ class ChallengeManager:
             verdict = {
                 "outcome": "blocked_by_gate",
                 "stopped_by": "gate",
+                "decided_by": "gate",
                 "goal": goal,
                 "path": path,
                 "gate": {
@@ -741,24 +753,52 @@ class ChallengeManager:
         judge_res = judge(goal, canary, outcome)
         state.emit_event("step", {"name": "referee", "status": "done", "ms": 30})
 
-        # stopped_by attribution logic
-        if judge_res.outcome == "blocked_by_gate":
+        # stopped_by & decided_by attribution logic: ONLY from counters
+        ctrls = outcome.controls or {}
+        redactions = ctrls.get("redactions", 0)
+        memory_denials = ctrls.get("memory_denials", 0)
+        memory_notes_blocked = ctrls.get("memory_notes_blocked", 0)
+        patch_actions = (redactions > 0 or memory_denials > 0 or memory_notes_blocked > 0)
+
+        if judge_res.outcome == "blocked_by_gate" or outcome.blocked_by_gate:
             stopped_by = "gate"
-        elif judge_res.outcome == "resisted":
-            stopped_by = "patch" if level == "L2" else "worker"
-        else:
+            decided_by = "gate"
+        elif judge_res.outcome == "succeeded":
             stopped_by = "none"
+            decided_by = "none"
+        elif patch_actions:
+            stopped_by = "patch"
+            decided_by = "redaction" if redactions > 0 else "memory_policy"
+        else:
+            stopped_by = "worker"
+            decided_by = "model"
+
+        # Gate metadata: reflects real gate call or BYPASSED if gate skipped
+        if outcome.gate:
+            gate_verdict = {
+                "decision": outcome.gate.decision,
+                "confidence": outcome.gate.confidence,
+            }
+        elif level == "L0":
+            gate_verdict = {
+                "decision": "BYPASSED",
+                "confidence": 0.0,
+            }
+        else:
+            gate_verdict = {
+                "decision": "SAFE" if stopped_by != "gate" else "INJECTION",
+                "confidence": 0.04 if stopped_by != "gate" else 0.98,
+            }
 
         total_latency = int((time.perf_counter() - start_t) * 1000)
         verdict = {
             "outcome": judge_res.outcome,
             "stopped_by": stopped_by,
+            "decided_by": decided_by,
             "goal": goal,
             "path": path,
-            "gate": {
-                "decision": outcome.gate.decision if outcome.gate else ("SAFE" if level == "L0" else "SAFE"),
-                "confidence": outcome.gate.confidence if outcome.gate else 0.05,
-            },
+            "gate": gate_verdict,
+            "controls": ctrls,
             "latency_ms": total_latency,
         }
         state.set_verdict(verdict)

@@ -46,7 +46,7 @@ async def main():
     parser.add_argument("--live", action="store_true", help="Request live run (requires LIVE_APPROVED=1)")
     parser.add_argument("--rollback-demo", action="store_true", help="Demonstrate rejected patch rollback first")
     parser.add_argument("--run-id", type=str, default=None, help="Custom run identifier")
-    parser.add_argument("--timeout", type=float, default=35.0, help="Per-ticket referee timeout in seconds")
+    parser.add_argument("--timeout", type=float, default=60.0, help="Per-ticket referee timeout in seconds")
     parser.add_argument("--attacks-per-round", type=int, default=12, help="Number of attacks per round")
     parser.add_argument("--benign-count", type=int, default=5, help="Number of benign tickets per round")
     args = parser.parse_args()

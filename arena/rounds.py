@@ -100,11 +100,12 @@ async def execute_round(
                 attack_id=attack.id,
             )
 
-            # Send ticket with 45s timeout and single retry on error
+            # Send ticket with 60s timeout (90s for multi-step) and single retry on error
             step_outcome: WorkerOutcome | None = None
+            step_timeout = 90.0 if len(steps) > 1 else 60.0
             for attempt in range(2):
                 try:
-                    step_outcome = await referee.transport.send_ticket(env, timeout_s=45.0)
+                    step_outcome = await referee.transport.send_ticket(env, timeout_s=step_timeout)
                     if not step_outcome.error:
                         break
                 except Exception as e:

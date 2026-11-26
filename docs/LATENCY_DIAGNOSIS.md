@@ -147,6 +147,38 @@ Benchmarking regex redaction across 20 representative customer service reports i
 
 - **`BAND_ROOM_ID`**: `0ff67f25-e8a4-42a5-a4ac-54d0c4ed727e` (qualified fresh room)
 - **`BAND_POLL_INTERVAL_S`**: `0.2`
-- **`TICKET_TIMEOUT_S`**: `30.0`
+- **`TICKET_TIMEOUT_S`**: `60.0` (with 1 retry, 90.0s for multi-step)
 - **`GEMINI_MIN_INTERVAL_S`**: `0`
-- **Expected Median Turn Latency**: 6.0s–7.0s
+- **Expected Median Turn Latency**: 7.0s–8.7s
+
+---
+
+## 8. Empirical Gemini Call Diagnosis & 429 Backoff Profiling
+
+Measured on 2026-11-26 using `scripts/diagnose_gemini_latency.py` with raw results stored in `data/latency_diagnosis_data.json`.
+
+### 8.1 Raw Gemini Inference Benchmark (Worker Prompt & Settings)
+
+10 sequential raw Gemini API calls evaluated across benign customer inquiries:
+
+| Evaluation Environment | Sample Size | Median Latency | Mean Latency | Prompt Tokens | Output Tokens | Thinking Tokens |
+|---|---|---|---|---|---|---|
+| **Local Host Environment** | 10 calls | **1,214.0 ms** | 1,327.7 ms | 116–123 | 109–122 | **0** |
+| **Sandbox Exec (MicroVM)** | 10 calls | **1,276.5 ms** | 1,302.4 ms | 116–123 | 109–122 | **0** |
+
+**Key Findings:**
+1. **Raw Model Speed**: Raw inference on `gemini-3.5-flash-lite` takes only **~1.2s to 1.3s**. It is remarkably consistent between local execution and microVM execution.
+2. **Thinking Tokens**: `gemini-3.5-flash-lite` uses **0 thinking tokens**. Explicitly passing `thinking_config=ThinkingConfig(thinking_budget=0)` fails with `400 INVALID_ARGUMENT: Request contains an invalid argument` as thinking budget configuration is not supported on this model.
+3. **AFC (Automatic Function Calling)**: WorkerCore prompts for raw JSON schema without SDK function declarations (`tools=None`). The SDK prints `AFC is enabled with max remote calls: 10`, but zero remote function calls are triggered.
+4. **Behavior Guard Evaluation**: Because raw inference is already ~1.2s and AFC triggers no external turns, disabling AFC or modifying prompts would yield <0.1s savings (failing the $\ge 2$s savings rule). The prompt and settings remain unchanged to preserve attack success ($\ge 60\%$) and benign pass rate ($20/20$).
+
+### 8.2 Worker Log & 429/503 Rate-Limit Analysis
+
+Audit of 2,000 recent lines in `/home/node/worker.log`:
+- **429/Quota occurrences in last 24h:** 1 (handled cleanly via backoff).
+- **503/Unavailable occurrences in last 24h:** 0.
+- **HTTP requests per ticket:** Exactly 1 LLM inference request per ticket (2 only if unparseable JSON triggers a single retry).
+- **Hardened 429/503 Policies Implemented in `agents/llm_gemini.py`:**
+  1. **Capped Sleep**: Maximum backoff sleep is strictly capped at `20.0s` (`waits = [5.0, 15.0, 20.0]`).
+  2. **Detailed Delay Logging**: Every 429/503 event logs the exact sleep duration to the application logger and appends `429_backoff_{sleep_time}s` to `docs/CALL_LEDGER.md`.
+  3. **45s Hang Abort**: Every model call is wrapped in `asyncio.wait_for(..., timeout=45.0)`. Any hung network call is aborted after 45 seconds and retried.

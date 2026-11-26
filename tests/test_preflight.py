@@ -175,3 +175,52 @@ def test_check_room_participants(monkeypatch):
         ok, msg = check_room_participants("mock-room-123")
         assert ok is False
         assert "Missing" in msg
+
+
+@pytest.mark.asyncio
+async def test_run_liveness_check_passes():
+    from arena.interfaces import WorkerOutcome, GateResult
+    from scripts.preflight import run_liveness_check
+
+    mock_outcome = WorkerOutcome(
+        ticket_id="live-B01",
+        outbound_messages=["Support Ticket Processed: Customer issue resolved."],
+        blocked_by_gate=False,
+        gate=GateResult(decision="SAFE", confidence=0.01, cached=False, blocked=False),
+        latency_ms=3900,
+        llm_calls=1,
+    )
+    mock_transport = MagicMock()
+    mock_transport.send_ticket = AsyncMock(return_value=mock_outcome)
+
+    with patch("arena.transport_band.BandTransport", return_value=mock_transport), \
+         patch("agents.dispatcher_band.BandDispatcherAgent.run", new_callable=AsyncMock):
+        ok, msg, metrics = await run_liveness_check(n=5, max_timeout_s=30.0, target_median_s=10.0)
+        assert ok is True
+        assert metrics["passed"] == 5
+        assert metrics["median_latency_s"] <= 10.0
+
+
+@pytest.mark.asyncio
+async def test_run_liveness_check_fails_on_median_exceeding_10s():
+    from arena.interfaces import WorkerOutcome, GateResult
+    from scripts.preflight import run_liveness_check
+
+    mock_outcome = WorkerOutcome(
+        ticket_id="live-B01",
+        outbound_messages=["Support Ticket Processed: Customer issue resolved."],
+        blocked_by_gate=False,
+        gate=GateResult(decision="SAFE", confidence=0.01, cached=False, blocked=False),
+        latency_ms=12000,
+        llm_calls=1,
+    )
+    mock_transport = MagicMock()
+    mock_transport.send_ticket = AsyncMock(return_value=mock_outcome)
+
+    with patch("arena.transport_band.BandTransport", return_value=mock_transport), \
+         patch("agents.dispatcher_band.BandDispatcherAgent.run", new_callable=AsyncMock):
+        # Even with fast execution, force latencies to reflect 12s
+        with patch("time.time", side_effect=[100.0, 112.0, 112.5, 124.5, 125.0, 137.0, 137.5, 149.5, 150.0, 162.0, 162.5]):
+            ok, msg, metrics = await run_liveness_check(n=5, max_timeout_s=30.0, target_median_s=10.0)
+            assert ok is False
+            assert "median" in msg.lower()
