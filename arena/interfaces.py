@@ -28,9 +28,10 @@ class GateResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     decision: GateDecision = Field(..., description="SAFE | INJECTION | ERROR")
-    confidence: float = Field(..., description="Confidence score 0.0 to 1.0")
+    confidence: float = Field(..., description="Confidence score 0.0 to 1.0 (detector confidence in decision)")
     cached: bool = Field(..., description="Whether result came from cache")
     blocked: bool = Field(..., description="Whether the payload was blocked")
+    injection_score: Optional[float] = Field(default=None, description="Estimated probability of injection 0.0 to 1.0 when derivable, else None")
 
 
 class WorkerOutcome(BaseModel):

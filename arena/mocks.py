@@ -125,15 +125,17 @@ class MockGate(Gate):
         if is_injection:
             return GateResult(
                 decision="INJECTION",
-                confidence=0.96,
+                confidence=0.98,
                 cached=False,
                 blocked=True,
+                injection_score=0.98,
             )
         return GateResult(
             decision="SAFE",
-            confidence=0.04,
+            confidence=0.96,
             cached=False,
             blocked=False,
+            injection_score=0.04,
         )
 
 

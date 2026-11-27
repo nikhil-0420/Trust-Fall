@@ -357,8 +357,10 @@ class ChallengeManager:
         if self.dispatcher_agent is not None and getattr(self.dispatcher_agent, "is_running", False):
             return True
         try:
+            from agents.dispatcher import Dispatcher
             from agents.dispatcher_band import BandDispatcherAgent
-            self.dispatcher_agent = BandDispatcherAgent()
+            from arena.factory import get_gate
+            self.dispatcher_agent = BandDispatcherAgent(dispatcher=Dispatcher(gate=get_gate()))
             poll_int = float(os.getenv("BAND_POLL_INTERVAL_S", "0.2"))
             self.dispatcher_task = asyncio.create_task(self.dispatcher_agent.run(interval_s=poll_int))
             await self.dispatcher_agent.wait_ready(timeout_s=3.0)
@@ -597,7 +599,8 @@ class ChallengeManager:
                     "path": "in-process",
                     "gate": {
                         "decision": "INJECTION" if stopped_by == "gate" else "SAFE",
-                        "confidence": 0.98 if stopped_by == "gate" else 0.04,
+                        "confidence": 0.98 if stopped_by == "gate" else 0.96,
+                        "injection_score": 0.98 if stopped_by == "gate" else 0.04,
                     },
                     "latency_ms": 610,
                 }
@@ -638,7 +641,7 @@ class ChallengeManager:
                     await sandbox.install_patch(last_patch)
                     if hasattr(sandbox, "exec_command"):
                         for _ in range(5):
-                            check_res = await sandbox.exec_command("cat /home/node/.trustfall/patch_applied.json 2>/dev/null || cat /home/node/patch_applied.json 2>/dev/null")
+                            check_res = await sandbox.exec_command("cat /home/node/data/worker_state/patch_applied.json 2>/dev/null || cat /home/node/.trustfall/patch_applied.json 2>/dev/null || cat /home/node/patch_applied.json 2>/dev/null")
                             if check_res.get("stdout"):
                                 try:
                                     p_app = json.loads(check_res["stdout"])
@@ -657,7 +660,7 @@ class ChallengeManager:
             # Clear patch for L0/L1 baseline
             if path == "band+agent37":
                 if hasattr(sandbox, "exec_command"):
-                    await sandbox.exec_command("rm -f /home/node/patch.json /home/node/.trustfall/patch_applied.json /home/node/patch_applied.json")
+                    await sandbox.exec_command("rm -f /home/node/patch.json /home/node/data/worker_state/patch.json /home/node/.trustfall/patch_applied.json /home/node/data/worker_state/patch_applied.json /home/node/patch_applied.json")
             else:
                 from agents.policy import Policy
                 if hasattr(transport, "worker") and transport.worker:
@@ -688,6 +691,7 @@ class ChallengeManager:
                 "gate": {
                     "decision": gate_res.decision,
                     "confidence": gate_res.confidence,
+                    "injection_score": gate_res.injection_score,
                 },
                 "latency_ms": latency,
             }
@@ -712,7 +716,7 @@ class ChallengeManager:
         )
 
         try:
-            outcome = await asyncio.wait_for(transport.send_ticket(env, timeout_s=45.0), timeout=45.0)
+            outcome = await asyncio.wait_for(transport.send_ticket(env, timeout_s=60.0), timeout=65.0)
         except TimeoutError:
             if path == "band+agent37":
                 self.circuit_breaker.record_failure()
@@ -778,16 +782,19 @@ class ChallengeManager:
             gate_verdict = {
                 "decision": outcome.gate.decision,
                 "confidence": outcome.gate.confidence,
+                "injection_score": outcome.gate.injection_score,
             }
         elif level == "L0":
             gate_verdict = {
                 "decision": "BYPASSED",
                 "confidence": 0.0,
+                "injection_score": None,
             }
         else:
             gate_verdict = {
                 "decision": "SAFE" if stopped_by != "gate" else "INJECTION",
-                "confidence": 0.04 if stopped_by != "gate" else 0.98,
+                "confidence": 0.96 if stopped_by != "gate" else 0.98,
+                "injection_score": 0.04 if stopped_by != "gate" else 0.98,
             }
 
         total_latency = int((time.perf_counter() - start_t) * 1000)

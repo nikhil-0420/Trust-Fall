@@ -88,6 +88,7 @@ class ScreenResponse(BaseModel):
     decision: str
     confidence: float
     cached: bool
+    injection_score: float | None = None
 
 
 class BreakRequest(BaseModel):
@@ -435,6 +436,7 @@ async def get_break_verdict(attempt_id: str) -> dict[str, Any]:
     res = dict(state.verdict)
     res["attempt_id"] = attempt_id
     res["status"] = "done"
+    res["steps"] = [e["data"] for e in state.events if e.get("event") == "step"]
     res["level"] = state.req_data.get("level")
     res["goal"] = state.req_data.get("goal")
     if state.req_data.get("share"):
@@ -466,4 +468,5 @@ async def internal_screen(
         decision=res.decision,
         confidence=res.confidence,
         cached=res.cached,
+        injection_score=res.injection_score,
     )

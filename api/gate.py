@@ -80,11 +80,32 @@ class LyzrGate(Gate):
         # 1. Disk Cache check
         cached_val = self._read_cache(text_hash, required_impl=target_impl)
         if cached_val is not None:
+            c_dec = cached_val["decision"]
+            c_conf = float(cached_val["confidence"])
+            if c_conf > 1.0:
+                c_conf = round(c_conf / 100.0, 4)
+            c_conf = max(0.0, min(1.0, c_conf))
+
+            c_inj = cached_val.get("injection_score")
+            if c_inj is not None:
+                c_inj = float(c_inj)
+                if c_inj > 1.0:
+                    c_inj = round(c_inj / 100.0, 4)
+                c_inj = max(0.0, min(1.0, c_inj))
+            else:
+                if c_dec == "INJECTION":
+                    c_inj = c_conf
+                elif c_dec == "SAFE":
+                    c_inj = round(1.0 - c_conf, 4)
+                else:
+                    c_inj = None
+
             return GateResult(
-                decision=cached_val["decision"],
-                confidence=float(cached_val["confidence"]),
+                decision=c_dec,
+                confidence=c_conf,
                 cached=True,
                 blocked=bool(cached_val["blocked"]),
+                injection_score=c_inj,
             )
 
         # 2. Check mock mode
@@ -97,6 +118,7 @@ class LyzrGate(Gate):
                     "impl": "mock",
                     "decision": res.decision,
                     "confidence": res.confidence,
+                    "injection_score": res.injection_score,
                     "blocked": res.blocked,
                 },
             )
@@ -111,6 +133,7 @@ class LyzrGate(Gate):
                 confidence=1.0,
                 cached=False,
                 blocked=True,
+                injection_score=None,
             )
 
         # 4. Live Lyzr API call
@@ -128,17 +151,33 @@ class LyzrGate(Gate):
                 self.consecutive_real_errors += 1
                 if self.consecutive_real_errors >= 3:
                     raise RuntimeError("INVALID-GATE: 3 consecutive REAL Lyzr calls returned ERROR")
-                return GateResult(decision="ERROR", confidence=1.0, cached=False, blocked=True)
+                return GateResult(decision="ERROR", confidence=1.0, cached=False, blocked=True, injection_score=None)
 
             self.consecutive_real_errors = 0
             data = response.json()
             message = str(data.get("message", "")).upper()
             details = data.get("details", {})
-            is_injection = details.get("is_injection", (message == "INJECTION"))
-            confidence = float(details.get("confidence", 0.96 if is_injection else 0.04))
+            is_injection = bool(details.get("is_injection", (message == "INJECTION")))
 
+            raw_conf = details.get("confidence")
+            if raw_conf is not None:
+                raw_conf_float = float(raw_conf)
+                # Lyzr returns percentage (0.0 to 100.0) e.g. 99.84
+                if raw_conf_float > 1.0:
+                    confidence = round(raw_conf_float / 100.0, 4)
+                else:
+                    confidence = round(raw_conf_float, 4)
+            else:
+                confidence = 0.98 if is_injection else 0.96
+
+            confidence = max(0.0, min(1.0, confidence))
             decision = "INJECTION" if is_injection else "SAFE"
             blocked = bool(is_injection)
+
+            if is_injection:
+                injection_score = confidence
+            else:
+                injection_score = round(1.0 - confidence, 4)
 
             # Persist to disk cache tagged with live Lyzr provenance
             self._write_cache(
@@ -147,6 +186,7 @@ class LyzrGate(Gate):
                     "impl": "lyzr",
                     "decision": decision,
                     "confidence": confidence,
+                    "injection_score": injection_score,
                     "blocked": blocked,
                 },
             )
@@ -156,6 +196,7 @@ class LyzrGate(Gate):
                 confidence=confidence,
                 cached=False,
                 blocked=blocked,
+                injection_score=injection_score,
             )
 
         except (httpx.TimeoutException, httpx.RequestError, json.JSONDecodeError, Exception) as exc:
@@ -170,4 +211,5 @@ class LyzrGate(Gate):
                 confidence=1.0,
                 cached=False,
                 blocked=True,
+                injection_score=None,
             )

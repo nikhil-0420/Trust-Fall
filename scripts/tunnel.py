@@ -64,6 +64,8 @@ def main():
         stdout=api_log,
         stderr=subprocess.STDOUT,
     )
+    with open(".api.pid", "w", encoding="utf-8") as apf:
+        apf.write(str(api_proc.pid))
 
     time.sleep(1.5)
 
@@ -78,6 +80,8 @@ def main():
             text=True,
             bufsize=1,
         )
+        with open(".tunnel_proc.pid", "w", encoding="utf-8") as tpf:
+            tpf.write(str(tunnel_proc.pid))
 
         public_url_found = False
         url_regex = re.compile(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com")
@@ -85,7 +89,11 @@ def main():
         while True:
             line = tunnel_proc.stdout.readline()
             if not line:
-                break
+                if tunnel_proc.poll() is not None:
+                    print(f"[!] cloudflared exited with return code {tunnel_proc.returncode}")
+                    break
+                time.sleep(0.2)
+                continue
             match = url_regex.search(line)
             if match and not public_url_found:
                 public_url = match.group(0)

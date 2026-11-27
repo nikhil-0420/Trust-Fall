@@ -510,3 +510,29 @@ Format: `[UTC timestamp] | Service | Purpose | Count | Cumulative Today`
 | 2026-11-26T07:34:46.606227+00:00 | Gemini | Benign v3 calibration B18 | 1 |
 | 2026-11-26T07:34:58.797483+00:00 | Gemini | Benign v3 calibration B19 | 1 |
 | 2026-11-26T07:35:10.881624+00:00 | Gemini | Benign v3 calibration B20 | 1 |
+| 2026-11-26T07:58:57.783491+00:00 | Lyzr | lyzr_probe_safe | 1 |
+| 2026-11-26T07:58:58.204382+00:00 | Lyzr | lyzr_probe_safe | 1 |
+| 2026-11-26T07:58:58.715920+00:00 | Lyzr | lyzr_probe_safe | 1 |
+| 2026-11-26T07:58:59.365982+00:00 | Lyzr | lyzr_probe_safe | 1 |
+| 2026-11-26T07:58:59.769204+00:00 | Lyzr | lyzr_probe_safe | 1 |
+| 2026-11-26T07:59:00.267510+00:00 | Lyzr | lyzr_probe_injection | 1 |
+| 2026-11-26T07:59:00.870348+00:00 | Lyzr | lyzr_probe_injection | 1 |
+| 2026-11-26T07:59:01.290090+00:00 | Lyzr | lyzr_probe_injection | 1 |
+| 2026-11-26T07:59:01.796604+00:00 | Lyzr | lyzr_probe_injection | 1 |
+| 2026-11-26T07:59:02.462114+00:00 | Lyzr | lyzr_probe_injection | 1 |
+| 2026-11-26T08:10:49.297933+00:00 | Lyzr | lyzr_screen_poison_A09 | 1 |
+| 2026-11-26T08:10:49.826870+00:00 | Lyzr | lyzr_screen_poison_A10 | 1 |
+| 2026-11-26T08:10:50.486827+00:00 | Lyzr | lyzr_screen_poison_A11 | 1 |
+| 2026-11-26T08:10:50.997795+00:00 | Lyzr | lyzr_screen_poison_A12 | 1 |
+| 2026-11-26T08:10:51.527112+00:00 | Lyzr | lyzr_screen_poison_A18 | 1 |
+| 2026-11-26T08:19:06.061147+00:00 | BAND | challenge_poison_l0 | 1 |
+| 2026-11-26T08:19:24.084499+00:00 | BAND | challenge_poison_followup_benign | 1 |
+| 2026-11-26T08:23:12.469739+00:00 | BAND | challenge_poison_l0 | 1 |
+| 2026-11-26T08:23:31.167072+00:00 | BAND | challenge_poison_followup_benign | 1 |
+| 2026-11-26T08:23:56.000765+00:00 | BAND | challenge_poison_l2 | 1 |
+| 2026-11-26T10:27:54.907718+00:00 | BAND | challenge_poison_l0 | 1 |
+| 2026-11-26T10:28:19.433655+00:00 | BAND | challenge_poison_followup_benign | 1 |
+| 2026-11-26T10:28:47.455796+00:00 | BAND | challenge_poison_l2 | 1 |
+| 2026-11-27T12:25:45.845731+00:00 | BAND | challenge_poison_l0 | 1 |
+| 2026-11-27T12:26:10.341442+00:00 | BAND | challenge_poison_followup_benign | 1 |
+| 2026-11-27T12:26:31.617692+00:00 | BAND | challenge_poison_l2 | 1 |

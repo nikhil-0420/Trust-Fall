@@ -89,6 +89,7 @@ class Event(BaseModel):
     target: Optional[str] = None
     decision: Optional[GateDecision] = None
     confidence: Optional[float] = None
+    injection_score: Optional[float] = None
     blocked: Optional[bool] = None
     cached: Optional[bool] = None
 

@@ -160,7 +160,8 @@ async def execute_round(
                     event_type="gate",
                     target="worker",
                     decision=step_outcome.gate.decision if step_outcome.gate else ("INJECTION" if step_outcome.blocked_by_gate else "SAFE"),
-                    confidence=step_outcome.gate.confidence if step_outcome.gate else (0.95 if step_outcome.blocked_by_gate else 0.05),
+                    confidence=step_outcome.gate.confidence if step_outcome.gate else (0.98 if step_outcome.blocked_by_gate else 0.96),
+                    injection_score=getattr(step_outcome.gate, "injection_score", None) if step_outcome.gate else (0.98 if step_outcome.blocked_by_gate else 0.04),
                     blocked=step_outcome.blocked_by_gate,
                     cached=step_outcome.gate.cached if step_outcome.gate else False,
                 )

@@ -97,7 +97,9 @@ async def check_or_start_tunnel(
 
     logger.info("Starting scripts/tunnel.py in the background...")
     tunnel_log = open(root / ".tunnel.log", "w", encoding="utf-8")
-    cflags = subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
+    cflags = 0
+    if sys.platform == "win32":
+        cflags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
     proc = subprocess.Popen(
         [sys.executable, str(tunnel_script)],
         stdout=tunnel_log,

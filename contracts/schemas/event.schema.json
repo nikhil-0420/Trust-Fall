@@ -130,6 +130,18 @@
       "default": null,
       "title": "Confidence"
     },
+    "injection_score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Injection Score"
+    },
     "blocked": {
       "anyOf": [
         {

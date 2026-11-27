@@ -165,11 +165,15 @@ class BandTransport(Transport):
         refund_after = None
         if self.sandbox is not None:
             try:
-                memory_after = await self.sandbox.read_memory()
-            except Exception:
-                pass
-            try:
-                refund_after = await self.sandbox.read_refund_ledger()
+                res_mem, res_ref = await asyncio.gather(
+                    self.sandbox.read_memory(),
+                    self.sandbox.read_refund_ledger(),
+                    return_exceptions=True,
+                )
+                if not isinstance(res_mem, Exception):
+                    memory_after = res_mem
+                if not isinstance(res_ref, Exception):
+                    refund_after = res_ref
             except Exception:
                 pass
 
@@ -177,7 +181,7 @@ class BandTransport(Transport):
         gate_res = None
         if is_gate_blocked:
             from arena.interfaces import GateResult
-            gate_res = GateResult(decision="INJECTION", confidence=0.96, blocked=True)
+            gate_res = GateResult(decision="INJECTION", confidence=0.98, blocked=True, injection_score=0.98)
 
         redactions = matched_report.count("[REDACTED]") if matched_report else 0
         controls = {
@@ -188,7 +192,6 @@ class BandTransport(Transport):
         }
         decided_by = "gate" if is_gate_blocked else ("redaction" if redactions > 0 else "none")
 
-        await asyncio.sleep(1.0)
         return WorkerOutcome(
             ticket_id=env.ticket_id,
             outbound_messages=[matched_report],

@@ -55,3 +55,25 @@ Place a badge in the Challenge / Break results panel and in the status header:
 - `path === "in-process"`: **`🔵 In-Process Simulation`** (with tooltip indicating circuit breaker fallback or local loopback execution)
 
 When the circuit breaker is open (`circuit_breaker.state === "open"`), display a warning chip indicating automatic 5-minute fallback to loopback with `cooldown_remaining_s` countdown.
+
+## 5. Gate Confidence & Injection Score Semantics
+
+The gate screening metadata across events, results, break verdicts, and `/api/screen` now has standardized, unambiguous confidence fields:
+
+- `gate.confidence`: Float between `0.0` and `1.0` representing the **detector's confidence in the decision reported**.
+  - When decision is `SAFE`: e.g. `0.9984` (meaning 99.8% confident the ticket is safe).
+  - When decision is `INJECTION`: e.g. `0.9999` (meaning 99.9% confident it is an injection).
+  - When decision is `ERROR`: `1.0` (fail-closed certainty).
+  - When decision is `BYPASSED` (at L0): `0.0`.
+  - **Frontend UI Display Rule**: When the gate blocks an attack, display:
+    ```
+    Blocked at the gate ({Math.round(verdict.gate.confidence * 100)}% confidence)
+    ```
+    (e.g., *"Blocked at the gate (98% confidence)"* or *"Blocked at the gate (100% confidence)"*).
+
+- `gate.injection_score`: Float between `0.0` and `1.0` (or `null`) representing the **estimated probability of prompt injection**.
+  - When decision is `INJECTION`: equal to `confidence` (e.g. `0.9999`).
+  - When decision is `SAFE`: equal to `1.0 - confidence` (e.g. `0.0016`).
+  - When decision is `ERROR` or `BYPASSED`: `null`.
+  - **Frontend UI Use**: Use `injection_score` when rendering risk gauge bars or continuous threat telemetry charts.
+

@@ -47,6 +47,23 @@ class GateClient(Gate):
                     data = resp.json()
                     decision = data.get("decision", "SAFE")
                     confidence = float(data.get("confidence", 0.0))
+                    if confidence > 1.0:
+                        confidence = round(confidence / 100.0, 4)
+                    confidence = max(0.0, min(1.0, confidence))
+
+                    injection_score = data.get("injection_score")
+                    if injection_score is not None:
+                        injection_score = float(injection_score)
+                        if injection_score > 1.0:
+                            injection_score = round(injection_score / 100.0, 4)
+                        injection_score = max(0.0, min(1.0, injection_score))
+                    elif decision == "INJECTION":
+                        injection_score = confidence
+                    elif decision == "SAFE":
+                        injection_score = round(1.0 - confidence, 4)
+                    else:
+                        injection_score = None
+
                     cached = bool(data.get("cached", False))
                     blocked = (decision == "INJECTION")
                     return GateResult(
@@ -54,6 +71,7 @@ class GateClient(Gate):
                         confidence=confidence,
                         cached=cached,
                         blocked=blocked,
+                        injection_score=injection_score,
                     )
                 else:
                     # Fail closed on non-200
@@ -62,6 +80,7 @@ class GateClient(Gate):
                         confidence=1.0,
                         cached=False,
                         blocked=True,
+                        injection_score=None,
                     )
         except Exception:
             # Fail closed on timeout or connection error
@@ -70,4 +89,5 @@ class GateClient(Gate):
                 confidence=1.0,
                 cached=False,
                 blocked=True,
+                injection_score=None,
             )
